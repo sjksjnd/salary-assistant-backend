@@ -6,7 +6,11 @@ const config = require('../config');
 async function getWeChatSession(code) {
   try {
     const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.wechat.appid}&secret=${config.wechat.secret}&js_code=${code}&grant_type=authorization_code`;
-    const response = await axios.get(url);
+    const https = require('https');
+    const agent = new https.Agent({
+      rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
+    });
+    const response = await axios.get(url, { httpsAgent: agent });
     const { errcode, errmsg, openid, session_key, unionid } = response.data;
 
     if (errcode) {
