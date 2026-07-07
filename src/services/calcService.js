@@ -64,12 +64,14 @@ async function calcMonthlySalary(userId, month, settings) {
 }
 
 async function calcSeverance(years, monthlySalary, city) {
-  const minWageMap = await configService.getConfig('min_wage') || {};
-  const cityMinWage = minWageMap[city] || 2000;
+  const avgSalaryMap = await configService.getConfig('avg_salary') || {};
+  const cityAvgSalary = avgSalaryMap[city] || 8000;
+  
+  const salaryCap = 3 * cityAvgSalary;
   
   let cappedSalary = monthlySalary;
-  if (monthlySalary > 3 * cityMinWage) {
-    cappedSalary = 3 * cityMinWage;
+  if (monthlySalary > salaryCap) {
+    cappedSalary = salaryCap;
   }
   
   const cappedYears = Math.min(years, 12);
@@ -79,7 +81,8 @@ async function calcSeverance(years, monthlySalary, city) {
     amount: Math.round(severance * 100) / 100,
     cappedSalary,
     cappedYears,
-    minWage: cityMinWage,
+    salaryCap,
+    cityAvgSalary,
   };
 }
 
