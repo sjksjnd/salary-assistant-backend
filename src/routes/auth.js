@@ -121,6 +121,61 @@ router.post('/update-profile', authenticate, async (req, res) => {
   }
 });
 
+// PUT /auth/profile - update nickname
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const { nickname } = req.body;
+    const userId = req.userId;
+
+    if (!nickname || nickname.trim().length === 0) {
+      return res.status(400).json(error(40001, '昵称不能为空'));
+    }
+    if (nickname.length > 20) {
+      return res.status(400).json(error(40001, '昵称最多20个字符'));
+    }
+
+    const user = await userService.updateUser(userId, { nickname: nickname.trim() });
+
+    res.json(success({
+      user: {
+        id: user.id,
+        nickname: user.nickname,
+        avatarUrl: user.avatar_url,
+        phone: user.phone,
+        points: user.points,
+        level: user.level,
+      }
+    }, '昵称更新成功'));
+  } catch (err) {
+    console.error('Update nickname error:', err);
+    res.status(500).json(error(50001, '更新失败'));
+  }
+});
+
+// POST /auth/avatar - upload avatar image
+router.post('/avatar', authenticate, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // In cloud hosting, file upload is handled by the platform
+    // For now, accept a base64 or URL in the body
+    const { avatarUrl } = req.body;
+
+    if (!avatarUrl) {
+      return res.status(400).json(error(40001, '请上传头像图片'));
+    }
+
+    const user = await userService.updateUser(userId, { avatar_url: avatarUrl });
+
+    res.json(success({
+      avatarUrl: user.avatar_url
+    }, '头像更新成功'));
+  } catch (err) {
+    console.error('Upload avatar error:', err);
+    res.status(500).json(error(50001, '头像上传失败'));
+  }
+});
+
 router.post('/refresh', async (req, res) => {
   try {
     const { refreshToken } = req.body;

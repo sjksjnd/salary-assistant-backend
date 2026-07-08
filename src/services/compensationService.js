@@ -13,8 +13,8 @@ const SCENARIO_KEYWORDS = {
 const QUESTIONS = [
   {
     id: 'Q1',
-    question: '你是否已经离职？',
-    type: 'choice',
+    text: '你是否已经离职？',
+    type: 'radio',
     options: [
       { value: 'yes', label: '是，已经离职' },
       { value: 'no', label: '否，还在上班' },
@@ -22,24 +22,28 @@ const QUESTIONS = [
   },
   {
     id: 'Q2',
-    question: '你在这家公司工作了几年？',
-    type: 'number',
+    text: '你在这家公司工作了几年？',
+    type: 'digit',
     min: 0,
     max: 40,
     unit: '年',
+    placeholder: '请输入工作年数',
+    errorMsg: '请输入0~40之间的年数'
   },
   {
     id: 'Q3',
-    question: '你每个月工资多少？（税前）',
-    type: 'number',
+    text: '你每个月工资多少？（税前）',
+    type: 'digit',
     min: 0,
     max: 100000,
     unit: '元',
+    placeholder: '请输入税前月工资',
+    errorMsg: '请输入0~100000之间的金额'
   },
   {
     id: 'Q4',
-    question: '是否签订了劳动合同？',
-    type: 'choice',
+    text: '是否签订了劳动合同？',
+    type: 'radio',
     options: [
       { value: 'yes', label: '是，已签订' },
       { value: 'no', label: '否，未签订' },
@@ -48,13 +52,13 @@ const QUESTIONS = [
   },
   {
     id: 'Q5',
-    question: '离职原因是什么？',
-    type: 'choice',
+    text: '离职原因是什么？',
+    type: 'radio',
     options: [
-      { value: 'fired', label: '公司单方面辞退' },
-      { value: 'resigned', label: '自己主动辞职' },
-      { value: 'expired', label: '合同到期未续签' },
-      { value: 'forced', label: '被迫离职（公司违法）' },
+      { value: 'company_terminate', label: '公司单方面辞退' },
+      { value: 'self_resign', label: '自己主动辞职' },
+      { value: 'contract_expire', label: '合同到期未续签' },
+      { value: 'forced_termination', label: '被迫离职（公司违法）' },
     ],
   },
 ];
@@ -79,7 +83,7 @@ async function calculateCompensation(answers, userId) {
   const monthlySalary = parseFloat(Q3) || 0;
 
   let compensation = {
-    total: 0,
+    totalAmount: 0,
     items: [],
     evidence: [],
     legalArticles: [],
@@ -87,25 +91,25 @@ async function calculateCompensation(answers, userId) {
   const scenarios = [];
 
   if (Q1 === 'yes') {
-    if (Q5 === 'fired' || Q5 === 'expired' || Q5 === 'forced') {
+    if (Q5 === 'company_terminate' || Q5 === 'contract_expire' || Q5 === 'forced_termination') {
       const severance = await calcService.calcSeverance(workYears, monthlySalary, '广东');
       compensation.items.push({
         name: '经济补偿金',
         amount: severance.amount,
         description: `工作 ${severance.cappedYears} 年 × ${severance.cappedSalary} 元/月`,
       });
-      compensation.total += severance.amount;
+      compensation.totalAmount += severance.amount;
       scenarios.push('severance_pay');
     }
 
-    if (Q5 === 'forced') {
+    if (Q5 === 'forced_termination') {
       const doubleSalary = monthlySalary * workYears;
       compensation.items.push({
         name: '违法解除赔偿金',
         amount: doubleSalary,
         description: '公司违法解除，应支付双倍经济补偿金',
       });
-      compensation.total += doubleSalary;
+      compensation.totalAmount += doubleSalary;
       scenarios.push('unlawful_termination');
     }
   }
@@ -118,7 +122,7 @@ async function calculateCompensation(answers, userId) {
       amount: doubleSalary,
       description: `未签合同 ${months} 个月 × ${monthlySalary} 元`,
     });
-    compensation.total += doubleSalary;
+    compensation.totalAmount += doubleSalary;
     scenarios.push('no_written_contract');
   }
 
@@ -150,14 +154,14 @@ async function calculateCompensation(answers, userId) {
     compensation.legalArticles = [];
   }
 
-  compensation.total = Math.round(compensation.total * 100) / 100;
+  compensation.totalAmount = Math.round(compensation.totalAmount * 100) / 100;
   compensation.evidence = EVIDENCE_LIST;
 
   return compensation;
 }
 
 async function saveCompensationRecord(userId, answers, result) {
-  const resultText = `补偿金额约 ${result.total} 元`;
+  const resultText = `补偿金额约 ${result.totalAmount} 元`;
   await queryInsert(
     'INSERT INTO detection_records (user_id, type, description, result_text, result_detail) VALUES (?, ?, ?, ?, ?)',
     [userId, 'compensation', '补偿估算', resultText, JSON.stringify({ answers, result })]

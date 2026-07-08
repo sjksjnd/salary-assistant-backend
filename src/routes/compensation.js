@@ -5,7 +5,8 @@ const { authenticate } = require('../middleware/auth');
 const { rateLimiters } = require('../middleware/rateLimiter');
 const { success, error } = require('../utils/response');
 
-router.get('/questions', authenticate, async (req, res) => {
+// Questions endpoint does not require auth (so users can see the form)
+router.get('/questions', async (req, res) => {
   try {
     const questions = await compensationService.getQuestions();
     res.json(success(questions));
