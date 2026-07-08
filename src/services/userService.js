@@ -8,7 +8,7 @@ async function getWeChatSession(code) {
     const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.wechat.appid}&secret=${config.wechat.secret}&js_code=${code}&grant_type=authorization_code`;
     const https = require('https');
     const agent = new https.Agent({
-      rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
+      rejectUnauthorized: false,
     });
     const response = await axios.get(url, { httpsAgent: agent });
     const { errcode, errmsg, openid, session_key, unionid } = response.data;
