@@ -19,11 +19,41 @@ router.post('/login', rateLimiters.login, async (req, res) => {
       openid = 'dev_openid_' + Date.now();
       unionid = null;
       console.log('[DEV MODE] 使用开发模式登录');
-    } else {
-      const session = await userService.getWeChatSession(code);
-      openid = session.openid;
-      unionid = session.unionid;
+
+      const mockUser = {
+        id: 999999,
+        openid,
+        nickname: nickname || '开发用户',
+        avatar_url: avatarUrl || '',
+        phone: null,
+        points: 0,
+        level: 1,
+        exp: 0,
+        status: 'active',
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const { accessToken, refreshToken } = await generateTokens(mockUser.id, openid);
+
+      return res.json(success({
+        user: {
+          id: mockUser.id,
+          nickname: mockUser.nickname,
+          avatarUrl: mockUser.avatar_url,
+          phone: mockUser.phone,
+          points: mockUser.points,
+          level: mockUser.level,
+        },
+        accessToken,
+        refreshToken,
+        isNewUser: true,
+      }, '开发模式登录成功'));
     }
+
+    const session = await userService.getWeChatSession(code);
+    openid = session.openid;
+    unionid = session.unionid;
 
     let user = await userService.getUserByOpenid(openid);
     const isNewUser = !user;
@@ -53,7 +83,13 @@ router.post('/login', rateLimiters.login, async (req, res) => {
       isNewUser,
     }, isNewUser ? '注册成功' : '登录成功'));
   } catch (err) {
-    console.error('[LOGIN ERROR]', err.message);
+    console.error('[LOGIN ERROR]', { message: err.message, stack: err.stack });
+    if (err.message.includes('connect ECONNREFUSED') || err.message.includes('ETIMEDOUT')) {
+      return res.status(500).json(error(50001, '服务暂时不可用，请稍后重试'));
+    }
+    if (err.message.includes('WeChat API error')) {
+      return res.status(500).json(error(50001, '微信登录失败，请重试'));
+    }
     res.status(500).json(error(50001, '登录失败，请重试'));
   }
 });
