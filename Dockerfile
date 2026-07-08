@@ -4,6 +4,12 @@ FROM node:18-slim
 # Set working directory
 WORKDIR /app
 
+# Keep system CA roots available for outbound HTTPS calls such as WeChat jscode2session.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy package files first for better layer caching
 COPY package.json package-lock.json* ./
 

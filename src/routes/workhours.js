@@ -66,7 +66,7 @@ router.post('/', authenticate, validateBody(workhourBodySchema), async (req, res
   }
 });
 
-router.get('/:recordDate', authenticate, async (req, res) => {
+router.get('/:recordDate(\\d{4}-\\d{2}-\\d{2})', authenticate, async (req, res) => {
   try {
     const { recordDate } = req.params;
     const record = await workhourService.getWorkhour(req.userId, recordDate);
@@ -107,7 +107,7 @@ router.get('/month/:month', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/:recordDate', authenticate, async (req, res) => {
+router.delete('/:recordDate(\\d{4}-\\d{2}-\\d{2})', authenticate, async (req, res) => {
   try {
     const { recordDate } = req.params;
     const deleted = await workhourService.deleteWorkhour(req.userId, recordDate);
