@@ -1,0 +1,212 @@
+<!-- 工资管理页 -->
+<view class="container {{fontScaleClass}}">
+
+  <!-- 月份切换器 -->
+  <view class="card month-switcher flex-between">
+    <view class="month-arrow" bindtap="prevMonth">＜</view>
+    <view class="title">{{monthLabel}}</view>
+    <view class="month-arrow" bindtap="nextMonth">＞</view>
+  </view>
+
+  <!-- 月度概览 -->
+  <view class="card overview-card">
+    <view class="hint">本月实发工资</view>
+    <view class="net-salary">¥{{netSalary}}</view>
+
+    <view class="overview-row flex-between mt-16">
+      <view class="overview-item">
+        <view class="hint">扣款合计</view>
+        <view class="overview-amount danger {{deductionWarning ? 'blink' : ''}}">¥{{totalDeduction}}</view>
+      </view>
+      <view class="overview-item">
+        <view class="hint">花销合计</view>
+        <view class="overview-amount warning">¥{{totalExpense}}</view>
+      </view>
+      <view class="overview-item">
+        <view class="hint">预支合计</view>
+        <view class="overview-amount">¥{{totalAdvance}}</view>
+      </view>
+    </view>
+
+    <!-- 扣款超出警告 -->
+    <view class="warning-bar mt-16" wx:if="{{deductionWarning}}">
+      <text>⚠️ 扣款合计已超过实发工资，请核实扣款记录</text>
+    </view>
+
+    <view class="remaining-row flex-between mt-16">
+      <view class="subtitle">剩余存款</view>
+      <view class="remaining-amount {{remaining >= 0 ? 'success' : 'danger'}}">¥{{remaining}}</view>
+    </view>
+  </view>
+
+  <!-- 4 个操作入口 -->
+  <view class="action-grid">
+    <view class="action-item" bindtap="openDeductionModal">
+      <view class="action-icon">💰</view>
+      <view class="action-label">记扣款</view>
+    </view>
+    <view class="action-item" bindtap="openExpenseModal">
+      <view class="action-icon">🛒</view>
+      <view class="action-label">记花销</view>
+    </view>
+    <view class="action-item" bindtap="openAdvanceModal">
+      <view class="action-icon">💵</view>
+      <view class="action-label">记预支</view>
+    </view>
+    <view class="action-item" bindtap="goBills">
+      <view class="action-icon">📊</view>
+      <view class="action-label">月度账单</view>
+    </view>
+    <view class="action-item" bindtap="shareBill">
+      <view class="action-icon">📤</view>
+      <view class="action-label">分享账单</view>
+    </view>
+  </view>
+
+  <!-- 花销分类统计 -->
+  <view class="card" wx:if="{{expenseStats.length > 0}}">
+    <view class="title mb-8">花销分类</view>
+    <view class="stat-row" wx:for="{{expenseStats}}" wx:key="value">
+      <view class="stat-left">
+        <text class="stat-icon">{{item.icon}}</text>
+        <text class="stat-label">{{item.label}}</text>
+      </view>
+      <view class="stat-bar-wrap flex-1">
+        <view class="stat-bar expense-bar" style="width: {{item.percent}}%"></view>
+      </view>
+      <view class="stat-right">
+        <text class="stat-amount">¥{{item.amount}}</text>
+        <text class="stat-percent hint">{{item.percent}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 扣款分类统计 -->
+  <view class="card" wx:if="{{deductionStats.length > 0}}">
+    <view class="title mb-8">扣款分类</view>
+    <view class="stat-row" wx:for="{{deductionStats}}" wx:key="value">
+      <view class="stat-left">
+        <text class="stat-icon">{{item.icon}}</text>
+        <text class="stat-label">{{item.label}}</text>
+      </view>
+      <view class="stat-bar-wrap flex-1">
+        <view class="stat-bar deduction-bar" style="width: {{item.percent}}%"></view>
+      </view>
+      <view class="stat-right">
+        <text class="stat-amount">¥{{item.amount}}</text>
+        <text class="stat-percent hint">{{item.percent}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="card empty-state" wx:if="{{!loading && !settlement && totalDeduction === 0 && totalExpense === 0 && totalAdvance === 0}}">
+    <view class="hint">本月暂无数据</view>
+    <view class="hint mt-8">点击上方按钮开始记录</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="card empty-state" wx:if="{{loading}}">
+    <view class="hint">加载中...</view>
+  </view>
+</view>
+
+<!-- 扣款弹窗 -->
+<view class="modal-mask" wx:if="{{deductionModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">记扣款</view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">分类</view>
+      <view class="category-grid">
+        <view class="category-item {{deductionForm.category === item.value ? 'active' : ''}}" wx:for="{{deductionCategories}}" wx:key="value" data-value="{{item.value}}" bindtap="pickDeductionCategory">
+          <text class="cat-icon">{{item.icon}}</text>
+          <text class="cat-label">{{item.label}}</text>
+        </view>
+      </view>
+
+      <view class="form-label mt-16">金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入金额（1-200000）" value="{{deductionForm.amount}}" data-field="amount" bindinput="onDeductionField" />
+
+      <view class="form-label mt-16">日期</view>
+      <picker mode="date" value="{{deductionForm.date}}" data-field="date" bindchange="onDeductionField">
+        <view class="input picker-display">{{deductionForm.date || '请选择日期'}}</view>
+      </picker>
+
+      <view class="form-label mt-16">备注</view>
+      <input class="input" placeholder="选填" value="{{deductionForm.note}}" data-field="note" bindinput="onDeductionField" />
+
+      <button class="btn-primary mt-16" bindtap="submitDeduction" loading="{{submitting}}">确认提交</button>
+    </view>
+  </view>
+</view>
+
+<!-- 花销弹窗 -->
+<view class="modal-mask" wx:if="{{expenseModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">记花销</view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">分类</view>
+      <view class="category-grid">
+        <view class="category-item {{expenseForm.category === item.value ? 'active' : ''}}" wx:for="{{expenseCategories}}" wx:key="value" data-value="{{item.value}}" bindtap="pickExpenseCategory">
+          <text class="cat-icon">{{item.icon}}</text>
+          <text class="cat-label">{{item.label}}</text>
+        </view>
+      </view>
+
+      <view class="form-label mt-16">金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入金额（1-200000）" value="{{expenseForm.amount}}" data-field="amount" bindinput="onExpenseField" />
+
+      <view class="form-label mt-16">日期</view>
+      <picker mode="date" value="{{expenseForm.date}}" data-field="date" bindchange="onExpenseField">
+        <view class="input picker-display">{{expenseForm.date || '请选择日期'}}</view>
+      </picker>
+
+      <view class="form-label mt-16">备注</view>
+      <input class="input" placeholder="选填" value="{{expenseForm.note}}" data-field="note" bindinput="onExpenseField" />
+
+      <button class="btn-primary mt-16" bindtap="submitExpense" loading="{{submitting}}">确认提交</button>
+    </view>
+  </view>
+</view>
+
+<!-- 预支弹窗 -->
+<view class="modal-mask" wx:if="{{advanceModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">记预支</view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入金额（1-200000）" value="{{advanceForm.amount}}" data-field="amount" bindinput="onAdvanceField" />
+
+      <view class="form-label mt-16">用途</view>
+      <input class="input" placeholder="请填写预支用途" value="{{advanceForm.purpose}}" data-field="purpose" bindinput="onAdvanceField" />
+
+      <button class="btn-primary mt-16" bindtap="submitAdvance" loading="{{submitting}}">确认提交</button>
+    </view>
+  </view>
+</view>
+
+<!-- 分享图片生成 Canvas（隐藏） -->
+<canvas canvas-id="billCanvas" style="width: 600px; height: 800px; position: fixed; left: -9999px;"></canvas>
+
+<!-- 分享图片预览弹窗 -->
+<view class="modal-mask" wx:if="{{shareModal}}" bindtap="closeShareModal">
+  <view class="modal-content share-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">账单分享</view>
+      <view class="modal-close" bindtap="closeShareModal">×</view>
+    </view>
+    <view class="modal-body">
+      <image wx:if="{{shareImage}}" src="{{shareImage}}" mode="widthFix" class="share-image" />
+      <view class="share-hint mt-16">长按图片保存或分享给好友</view>
+    </view>
+  </view>
+</view>

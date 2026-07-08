@@ -1,0 +1,35 @@
+<view class="page pt-6 {{fontScaleClass}}">
+  <view class="container">
+    <!-- 顶部欢迎语 -->
+    <view class="header flex-col flex-center mb-24">
+      <text class="title-lg">工友守护·薪工记</text>
+      <text class="subtitle mt-8">守护你的每一分辛苦钱</text>
+    </view>
+
+    <!-- 功能卡片 2×2 网格 -->
+    <view class="grid">
+      <view
+        class="grid-item card flex-col"
+        wx:for="{{features}}"
+        wx:key="key"
+        data-path="{{item.path}}"
+        data-tab="{{item.isTab}}"
+        bindtap="onTapFeature"
+        hover-class="card-hover"
+        hover-stay-time="100"
+      >
+        <view class="icon-box" style="background: {{item.gradient}};">
+          <text class="icon-emoji">{{item.icon}}</text>
+        </view>
+        <text class="feature-title mt-16">{{item.title}}</text>
+        <text class="feature-sub mt-8">{{item.subtitle}}</text>
+      </view>
+    </view>
+
+    <!-- 底部版本说明 -->
+    <view class="footer flex-col flex-center mt-24">
+      <text class="hint">版本 v1.0.0</text>
+      <text class="hint mt-8">本工具仅供参考，不构成法律意见</text>
+    </view>
+  </view>
+</view>

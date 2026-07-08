@@ -1,0 +1,7 @@
+node_modules/
+.project
+*.swp
+*.swo
+.DS_Store
+project.private.config.json
+miniprogram_npm/

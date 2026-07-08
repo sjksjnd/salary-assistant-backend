@@ -1,0 +1,108 @@
+<view class="container">
+  <!-- 说明卡片 -->
+  <view class="card">
+    <text class="title">合同体检</text>
+    <text class="subtitle mt-8">通过智能分析合同文本，检测可能损害劳动者权益的不公平条款，包括试用期过长、违约金条款、加班约定等。</text>
+    <view class="disclaimer mt-16">
+      <text class="hint">免责声明：本工具提供的分析结果仅供参考，不构成法律意见。如遇劳动争议，建议咨询专业律师或拨打12333劳动保障热线。</text>
+    </view>
+  </view>
+
+  <!-- 历史记录入口 -->
+  <view class="card history-entry" bindtap="viewHistory">
+    <view class="flex-between">
+      <text class="subtitle">查看检测记录</text>
+      <text class="history-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 文本输入区 -->
+  <view class="card">
+    <view class="flex-between">
+      <text class="title">合同文本</text>
+      <text class="hint">{{textLength}} 字</text>
+    </view>
+    <textarea class="textarea mt-16" placeholder="请粘贴或输入合同内容（至少100字）" value="{{text}}" bindinput="onTextInput" maxlength="-1" auto-height />
+    <text class="hint mt-8" wx:if="{{textLength < 100}}">还需输入 {{100 - textLength}} 字</text>
+    <view class="flex mt-16">
+      <button class="btn-outline flex-1" bindtap="pasteContract">粘贴合同文本</button>
+      <view class="action-gap"></view>
+      <button class="btn-outline flex-1" bindtap="loadSample">使用示例合同</button>
+    </view>
+  </view>
+
+  <!-- 开始检测按钮 -->
+  <button class="btn-primary analyze-btn mt-16" bindtap="startAnalyze" disabled="{{!canAnalyze}}" loading="{{loading}}">
+    {{loading ? '检测中...' : '开始检测'}}
+  </button>
+
+  <!-- 检测中 loading -->
+  <view class="card flex-center loading-card" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="subtitle mt-16">正在分析合同内容...</text>
+  </view>
+
+  <!-- 检测结果 -->
+  <block wx:if="{{result && !loading}}">
+    <!-- 摘要卡片 -->
+    <view class="card summary-card">
+      <text class="title">检测结果</text>
+      <view class="mt-16">
+        <text class="summary-text">共发现 </text>
+        <text class="summary-total">{{result.summary.total || 0}}</text>
+        <text class="summary-text"> 处需要注意的条款</text>
+      </view>
+      <view class="summary-tags mt-16">
+        <text class="tag tag-critical" wx:if="{{result.summary.critical}}">严重 {{result.summary.critical}}</text>
+        <text class="tag tag-high" wx:if="{{result.summary.high}}">高 {{result.summary.high}}</text>
+        <text class="tag tag-medium" wx:if="{{result.summary.medium}}">中 {{result.summary.medium}}</text>
+      </view>
+    </view>
+
+    <!-- 问题列表 -->
+    <view class="card" wx:if="{{result.issues && result.issues.length}}">
+      <text class="title">问题详情</text>
+      <view class="issue-item mt-16" wx:for="{{result.issues}}" wx:key="index">
+        <view class="flex-between">
+          <text class="tag tag-{{item.severity}}">
+            {{item.severity === 'critical' ? '严重' : item.severity === 'high' ? '高' : '中'}}
+          </text>
+          <text class="issue-type">{{item.type}}</text>
+        </view>
+        <view class="mt-8" wx:if="{{item.law}}">
+          <text class="issue-law">法条依据：{{item.law}}</text>
+          <text class="issue-law-text hint mt-8">{{item.lawText}}</text>
+        </view>
+        <view class="issue-suggestion mt-8">
+          <text class="subtitle">建议处理：</text>
+          <text class="hint mt-8">{{item.suggestion}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 法条交叉验证 -->
+    <view class="card" wx:if="{{result.legalArticles && result.legalArticles.length}}">
+      <text class="title">法条交叉验证</text>
+      <view class="mt-16" wx:for="{{result.legalArticles}}" wx:key="source">
+        <view class="law-item">
+          <text class="law-source">{{item.source}}</text>
+          <text class="law-title subtitle mt-8" wx:if="{{item.title}}">{{item.title}}</text>
+          <text class="law-text hint mt-8">{{item.originalText}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 协商优先提示 -->
+    <view class="card negotiate-card">
+      <text class="title">协商优先</text>
+      <text class="subtitle mt-8">建议优先与用人单位协商沟通。多数劳动争议可通过协商、调解等方式解决，无需进入仲裁或诉讼程序。</text>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="flex action-bar mt-16">
+      <button class="btn-outline flex-1" bindtap="saveRecord" loading="{{savingRecord}}">保存检测记录</button>
+      <view class="action-gap"></view>
+      <button class="btn-primary flex-1" bindtap="reset">重新检测</button>
+    </view>
+  </block>
+</view>

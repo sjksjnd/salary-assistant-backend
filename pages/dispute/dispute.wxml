@@ -1,0 +1,90 @@
+<!-- 争议解决页 -->
+<view class="container {{fontScaleClass}}">
+
+  <!-- 协商优先提示 -->
+  <view class="card consult-tip">
+    <view class="tip-title">💡 协商优先</view>
+    <view class="tip-desc">建议优先与用人单位协商沟通，多数劳动争议可通过协商解决，省时省力。协商不成再依次采取下列措施。</view>
+  </view>
+
+  <!-- 处理流程时间线 -->
+  <view class="card">
+    <view class="title mb-16">维权处理流程</view>
+    <view class="timeline">
+      <view class="timeline-item" wx:for="{{timeline}}" wx:key="step">
+        <view class="timeline-left">
+          <view class="timeline-icon">{{item.icon}}</view>
+          <view class="timeline-line" wx:if="{{item.step < 5}}"></view>
+        </view>
+        <view class="timeline-content">
+          <view class="timeline-title">
+            <text class="step-badge">第{{item.step}}步</text>
+            <text class="step-name">{{item.title}}</text>
+          </view>
+          <view class="timeline-desc hint mt-8">{{item.desc}}</view>
+
+          <!-- 第 3 步：拨打电话 -->
+          <view class="mt-8" wx:if="{{item.step === 3}}">
+            <view class="call-btn" bindtap="call12333">📞 立即拨打 12333</view>
+            <view class="hint mt-8">工作时间：周一至周五 9:00-17:00</view>
+          </view>
+
+          <view class="timeline-detail-box mt-8">{{item.detail}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 文书模板 -->
+  <view class="card">
+    <view class="title mb-16">文书模板</view>
+    <view class="template-item" wx:for="{{templates}}" wx:key="id">
+      <view class="template-info flex-1">
+        <view class="template-title">{{item.title}}</view>
+        <view class="template-intro hint mt-8">{{item.intro}}</view>
+        <view class="template-price mt-8">{{item.price}}/份</view>
+      </view>
+      <view class="template-actions">
+        <view class="btn-outline template-btn" data-id="{{item.id}}" bindtap="viewTemplate">查看模板</view>
+        <view class="btn-primary template-btn mt-8" bindtap="buyTemplate">购买</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 法律依据 -->
+  <view class="card">
+    <view class="title mb-16">法律依据</view>
+    <view wx:if="{{loadingArticles}}" class="hint loading-hint">加载中...</view>
+    <view wx:elif="{{articles.length === 0}}" class="hint loading-hint">暂无法律条文</view>
+    <block wx:else>
+      <view class="article-item" wx:for="{{articles}}" wx:key="id">
+        <view class="article-source tag tag-info">{{item.source}}</view>
+        <view class="article-title mt-8">{{item.title}}</view>
+        <view class="article-text mt-8">{{item.originalText}}</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 免责声明 -->
+  <view class="disclaimer">
+    本工具仅提供通用信息查询，不构成法律意见，涉及具体案件建议咨询当地律师。
+  </view>
+</view>
+
+<!-- 模板详情弹窗 -->
+<view class="modal-mask" wx:if="{{templateModal}}" bindtap="closeTemplate">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">{{currentTemplate.title}}</view>
+      <view class="modal-close" bindtap="closeTemplate">×</view>
+    </view>
+    <scroll-view scroll-y class="modal-body">
+      <view class="template-price-row mb-16">
+        <text class="template-price">{{currentTemplate.price}}/份</text>
+        <text class="hint desensitize-hint">（敏感信息已用 XX 替换）</text>
+      </view>
+      <view class="template-full-text">{{currentTemplate.content}}</view>
+      <button class="btn-primary mt-16" bindtap="buyTemplate">购买此模板</button>
+    </scroll-view>
+  </view>
+</view>

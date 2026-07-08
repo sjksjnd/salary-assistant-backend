@@ -1,0 +1,496 @@
+/* 记工时页样式 */
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding-bottom: 140rpx;
+}
+
+/* 月份切换器 */
+.month-bar {
+  padding: 24rpx 32rpx;
+}
+
+.arrow-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-light);
+}
+
+.arrow {
+  font-size: 28rpx;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.month-label {
+  color: var(--text-primary);
+}
+
+/* 视图切换 */
+.view-switcher {
+  display: flex;
+  padding: 8rpx;
+  gap: 8rpx;
+}
+
+.view-tab {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.view-tab.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 日历 */
+.calendar-card {
+  padding: 24rpx 16rpx;
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.calendar-weekday.weekend {
+  color: var(--warning);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6rpx;
+}
+
+.calendar-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12rpx;
+  background: #FAFAFA;
+  border: 1rpx solid transparent;
+  min-height: 90rpx;
+}
+
+.calendar-cell.empty {
+  background: transparent;
+}
+
+.calendar-cell.weekend {
+  background: #FFF8F0;
+}
+
+.calendar-cell.holiday {
+  background: #FFEBEE;
+}
+
+.calendar-cell.today {
+  border: 2rpx solid var(--primary);
+  background: var(--primary-light);
+}
+
+.calendar-cell.has-record {
+  background: #E8F5E9;
+  border-color: #A5D6A7;
+}
+
+.calendar-cell.overtime {
+  background: #FFF3E0;
+  border-color: var(--warning);
+}
+
+.cell-day {
+  font-size: 26rpx;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.calendar-cell.today .cell-day {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.cell-hours {
+  font-size: 20rpx;
+  color: var(--success);
+  margin-top: 4rpx;
+}
+
+.cell-wage {
+  font-size: 18rpx;
+  color: var(--text-tertiary);
+  margin-top: 2rpx;
+}
+
+.cell-overtime-tag {
+  position: absolute;
+  top: 4rpx;
+  right: 4rpx;
+  font-size: 16rpx;
+  color: #fff;
+  background: var(--warning);
+  padding: 2rpx 6rpx;
+  border-radius: 6rpx;
+  line-height: 1;
+}
+
+/* 日历图例 */
+.calendar-legend {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 24rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--border);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
+
+.legend-box {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 6rpx;
+  border: 1rpx solid var(--border);
+}
+
+.today-box { background: var(--primary-light); border-color: var(--primary); }
+.record-box { background: #E8F5E9; border-color: #A5D6A7; }
+.overtime-box { background: #FFF3E0; border-color: var(--warning); }
+.weekend-box { background: #FFF8F0; }
+
+/* 统计卡片 */
+.stats-card {
+  padding: 32rpx 24rpx;
+}
+
+.stats-row {
+  width: 100%;
+}
+
+.stat-item {
+  flex: 1;
+}
+
+.stat-num {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.wage-num {
+  color: var(--primary);
+}
+
+.warning {
+  color: var(--warning);
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  margin-top: 8rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 60rpx;
+  background: var(--border);
+}
+
+/* 法定差额卡片 */
+.diff-card {
+  padding: 32rpx;
+}
+
+/* 三层工资模型卡片 */
+.wage-model-card {
+  padding: 32rpx;
+}
+
+.wage-layer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wage-layer-item {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wage-layer-label {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+}
+
+.wage-layer-value {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wage-layer-value.primary {
+  color: var(--primary);
+}
+
+.wage-layer-value.warning {
+  color: var(--warning);
+}
+
+.wage-layer-value.success {
+  color: var(--success);
+}
+
+.wage-divider {
+  height: 1rpx;
+  background: var(--border);
+  margin: 16rpx 0;
+}
+
+.wage-hint {
+  font-size: 26rpx;
+  color: var(--text-tertiary);
+  background: #FFF8E1;
+  padding: 16rpx 24rpx;
+  border-radius: 12rpx;
+}
+
+.wage-hint.success {
+  color: var(--success);
+  background: #E8F5E9;
+}
+
+.diff-badge {
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.diff-badge.overtime {
+  background: #FFF3E0;
+  color: var(--warning);
+}
+
+.diff-badge.undertime {
+  background: #E3F2FD;
+  color: var(--primary);
+}
+
+.diff-row {
+  display: flex;
+  gap: 32rpx;
+}
+
+.diff-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.diff-label {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
+.diff-value {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.diff-hint {
+  font-size: 26rpx;
+  color: var(--warning);
+  background: #FFF8E1;
+  padding: 16rpx 24rpx;
+  border-radius: 12rpx;
+}
+
+.diff-hint.undertime {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 记录列表 */
+.record-item {
+  padding: 28rpx 32rpx;
+}
+
+.record-date {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.record-hours {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  margin-left: 8rpx;
+}
+
+.record-wage {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 80rpx 32rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  line-height: 1;
+}
+
+/* 底部固定栏 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16rpx 24rpx;
+  padding-bottom: calc(16rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1rpx solid var(--border);
+  z-index: 50;
+}
+
+.add-btn {
+  width: 100%;
+  font-size: 32rpx;
+}
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal {
+  width: 100%;
+  max-width: 750rpx;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  margin-bottom: 24rpx;
+}
+
+.close-btn {
+  font-size: 36rpx;
+  color: var(--text-tertiary);
+  padding: 8rpx 16rpx;
+}
+
+.form-group {
+  margin-bottom: 24rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  margin-bottom: 12rpx;
+}
+
+.picker-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-primary);
+}
+
+.picker-display .placeholder {
+  color: var(--text-tertiary);
+}
+
+.picker-arrow {
+  color: var(--text-tertiary);
+  font-size: 24rpx;
+}
+
+/* 班次选项 */
+.shift-options {
+  display: flex;
+  gap: 16rpx;
+}
+
+.shift-option {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  border: 1rpx solid var(--border);
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  background: #fff;
+}
+
+.shift-option.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 提交按钮 */
+.submit-btn {
+  margin: 0;
+  width: 100%;
+  line-height: normal;
+}
+
+.submit-btn::after {
+  border: none;
+}

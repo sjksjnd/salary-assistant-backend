@@ -1,0 +1,196 @@
+/* 进度条 */
+.progress-bar {
+  width: 100%;
+  height: 12rpx;
+  background: #E5E5E5;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2864AC;
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+/* 问题文本 */
+.question-text {
+  display: block;
+  line-height: 1.6;
+}
+
+/* 单选组 */
+.radio-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #E5E5E5;
+}
+
+.radio-item:last-child {
+  border-bottom: none;
+}
+
+.radio-label {
+  margin-left: 16rpx;
+  font-size: 32rpx;
+}
+
+/* 数字输入 */
+.digit-input-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.digit-input {
+  flex: 1;
+  padding-right: 80rpx;
+}
+
+.digit-unit {
+  position: absolute;
+  right: 24rpx;
+  color: #999;
+  font-size: 30rpx;
+}
+
+/* 操作栏 */
+.action-bar {
+  padding: 0 8rpx;
+}
+
+.action-gap {
+  width: 24rpx;
+}
+
+/* 结果金额卡片 */
+.result-amount-card {
+  text-align: center;
+  padding: 48rpx 32rpx;
+}
+
+.amount-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.amount-symbol {
+  font-size: 40rpx;
+  color: #2864AC;
+  font-weight: 600;
+}
+
+.amount-value {
+  font-size: 80rpx;
+  color: #2864AC;
+  font-weight: 700;
+  margin-left: 8rpx;
+}
+
+/* 明细 */
+.detail-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #E5E5E5;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-amount {
+  color: #2864AC;
+  font-weight: 600;
+  font-size: 32rpx;
+}
+
+/* 法条 */
+.law-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #E5E5E5;
+}
+
+.law-item:last-child {
+  border-bottom: none;
+}
+
+.law-source {
+  display: block;
+  font-size: 28rpx;
+  color: #2864AC;
+  font-weight: 600;
+}
+
+.law-title {
+  display: block;
+}
+
+.law-text {
+  display: block;
+  line-height: 1.6;
+}
+
+/* 协商卡片 */
+.negotiate-card {
+  background: #E8F1FA;
+  border-color: #B5C8D8;
+}
+
+/* 证据清单 */
+.evidence-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.evidence-item {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 0;
+}
+
+.evidence-dot {
+  color: #2864AC;
+  margin-right: 16rpx;
+  font-size: 32rpx;
+}
+
+.evidence-text {
+  font-size: 30rpx;
+}
+
+/* 处理流程 */
+.process-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.process-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+}
+
+.process-num {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: #2864AC;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.process-text {
+  font-size: 30rpx;
+}

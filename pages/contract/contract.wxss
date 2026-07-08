@@ -1,0 +1,155 @@
+/* 历史记录入口 */
+.history-entry {
+  padding: 24rpx 32rpx;
+}
+
+.history-arrow {
+  color: #999;
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+/* 免责声明 */
+.disclaimer {
+  padding: 16rpx;
+  background: #FFF8E1;
+  border-radius: 12rpx;
+}
+
+/* 文本输入区 */
+.textarea {
+  width: 100%;
+  min-height: 300rpx;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid #E5E5E5;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  background: #fff;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+/* 操作栏 */
+.action-bar {
+  padding: 0 8rpx;
+}
+
+.action-gap {
+  width: 24rpx;
+}
+
+/* 检测按钮 */
+.analyze-btn {
+  width: 100%;
+}
+
+/* loading */
+.loading-card {
+  flex-direction: column;
+  padding: 64rpx 32rpx;
+}
+
+.loading-spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border: 4rpx solid #E5E5E5;
+  border-top-color: #2864AC;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 摘要卡片 */
+.summary-card {
+  padding: 32rpx;
+}
+
+.summary-text {
+  font-size: 32rpx;
+}
+
+.summary-total {
+  color: #2864AC;
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+.summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.summary-tags .tag {
+  margin-right: 16rpx;
+  margin-bottom: 8rpx;
+  font-size: 26rpx;
+  padding: 8rpx 20rpx;
+}
+
+/* 问题项 */
+.issue-item {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #E5E5E5;
+}
+
+.issue-item:last-child {
+  border-bottom: none;
+}
+
+.issue-type {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.issue-law {
+  display: block;
+  font-size: 28rpx;
+  color: #2864AC;
+  font-weight: 600;
+}
+
+.issue-law-text {
+  display: block;
+  line-height: 1.6;
+}
+
+.issue-suggestion {
+  padding: 16rpx;
+  background: #F5F5F5;
+  border-radius: 12rpx;
+}
+
+/* 法条 */
+.law-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #E5E5E5;
+}
+
+.law-item:last-child {
+  border-bottom: none;
+}
+
+.law-source {
+  display: block;
+  font-size: 28rpx;
+  color: #2864AC;
+  font-weight: 600;
+}
+
+.law-title {
+  display: block;
+}
+
+.law-text {
+  display: block;
+  line-height: 1.6;
+}
+
+/* 协商卡片 */
+.negotiate-card {
+  background: #E8F1FA;
+  border-color: #B5C8D8;
+}

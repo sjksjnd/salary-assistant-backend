@@ -1,0 +1,265 @@
+/* pages/login/login.wxss */
+
+.page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 80rpx 48rpx 48rpx;
+  box-sizing: border-box;
+}
+
+/* Logo 区 */
+.logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 80rpx;
+  margin-bottom: 120rpx;
+}
+
+.logo-circle {
+  width: 160rpx;
+  height: 160rpx;
+  background: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+  box-shadow: 0 8rpx 24rpx rgba(40, 100, 172, 0.3);
+}
+
+.logo-icon {
+  font-size: 80rpx;
+  line-height: 1;
+}
+
+.app-title {
+  font-size: 44rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16rpx;
+}
+
+.welcome-text {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 登录区 */
+.login-section {
+  flex: 1;
+}
+
+/* 用户信息表单 */
+.form-section {
+  flex: 1;
+  padding: 0 32rpx;
+}
+
+.form-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 48rpx;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  width: 120rpx;
+  font-size: 28rpx;
+  color: var(--text-primary);
+}
+
+.avatar-btn {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 2rpx dashed var(--text-tertiary);
+  background: #f8f8f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 24rpx;
+  padding: 0;
+}
+
+.avatar-btn::after {
+  border: none;
+}
+
+.avatar-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
+.nickname-input {
+  flex: 1;
+  height: 80rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 12rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  margin-left: 24rpx;
+}
+
+.mt-32 {
+  margin-top: 32rpx;
+}
+
+.login-btn {
+  width: 100%;
+  height: 96rpx;
+  background: #07C160;
+  color: #fff;
+  font-size: 32rpx;
+  border-radius: 48rpx;
+  border: none;
+  line-height: 96rpx;
+  font-weight: 500;
+}
+
+.login-btn[disabled] {
+  background: #9ED8B5;
+  color: #fff;
+}
+
+.login-btn::after {
+  border: none;
+}
+
+.agreement-row {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 32rpx;
+  padding: 0 8rpx;
+}
+
+.checkbox {
+  width: 32rpx;
+  height: 32rpx;
+  border: 2rpx solid var(--text-tertiary);
+  border-radius: 6rpx;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.checkbox.checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.check-icon {
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.agreement-text {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.agreement-link {
+  color: var(--primary);
+}
+
+/* 底部信息 */
+.footer {
+  text-align: center;
+  padding-top: 24rpx;
+}
+
+.footer-text {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  line-height: 1.8;
+}
+
+/* 协议弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  width: 85%;
+  max-width: 600rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 24rpx;
+  color: var(--text-primary);
+}
+
+.modal-content {
+  max-height: 60vh;
+  margin-bottom: 24rpx;
+}
+
+.modal-section {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 20rpx 0 8rpx;
+}
+
+.modal-section:first-child {
+  margin-top: 0;
+}
+
+.modal-paragraph {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12rpx;
+}
+
+.modal-close {
+  text-align: center;
+  background: var(--primary);
+  color: #fff;
+  padding: 20rpx;
+  border-radius: 48rpx;
+  font-size: 30rpx;
+}
