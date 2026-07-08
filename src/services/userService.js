@@ -5,12 +5,19 @@ const config = require('../config');
 
 async function getWeChatSession(code) {
   try {
-    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${config.wechat.appid}&secret=${config.wechat.secret}&js_code=${code}&grant_type=authorization_code`;
-    const https = require('https');
-    const agent = new https.Agent({
-      rejectUnauthorized: false,
+    // Use POST body to avoid leaking secret in URL query strings (logs/proxies/history).
+    const url = 'https://api.weixin.qq.com/sns/jscode2session';
+    const response = await axios.post(url, null, {
+      params: {
+        appid: config.wechat.appid,
+        secret: config.wechat.secret,
+        js_code: code,
+        grant_type: 'authorization_code',
+      },
+      // Default TLS verification is ON (rejectUnauthorized defaults to true).
+      // Do not override httpsAgent with rejectUnauthorized: false.
+      timeout: 10000,
     });
-    const response = await axios.get(url, { httpsAgent: agent });
     const { errcode, errmsg, openid, session_key, unionid } = response.data;
 
     if (errcode) {
@@ -19,12 +26,15 @@ async function getWeChatSession(code) {
 
     return { openid, session_key, unionid };
   } catch (err) {
-    throw new Error(`Failed to get WeChat session: ${err.message}`);
+    // Preserve original error code for upstream classification (ECONNREFUSED etc.)
+    const wrapped = new Error(`Failed to get WeChat session: ${err.message}`);
+    if (err.code) wrapped.code = err.code;
+    throw wrapped;
   }
 }
 
 async function getUserByOpenid(openid) {
-  const rows = await query('SELECT * FROM users WHERE openid = ?', [openid]);
+  const rows = await query('SELECT id, openid, unionid, nickname, avatar_url, phone, points, level, exp, invite_code, status, last_login_at, created_at, updated_at FROM users WHERE openid = ?', [openid]);
   return rows.length > 0 ? rows[0] : null;
 }
 
@@ -40,7 +50,7 @@ async function createUser(openid, unionid, nickname, avatarUrl) {
     [openid, unionid || null, nickname || '用户', avatarUrl || null, inviteCode]
   );
 
-  const rows = await query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+  const rows = await query('SELECT id, openid, unionid, nickname, avatar_url, phone, points, level, exp, invite_code, status, last_login_at, created_at, updated_at FROM users WHERE id = ?', [result.insertId]);
   const user = rows[0];
 
   await queryInsert(
@@ -83,7 +93,7 @@ async function updateLastLogin(userId) {
 }
 
 async function getUserSettings(userId) {
-  const rows = await query('SELECT * FROM user_settings WHERE user_id = ?', [userId]);
+  const rows = await query('SELECT id, user_id, hourly_rate, night_rate, standard_hours, factory_name, factory_city, reminder_enabled, reminder_time, font_scale, updated_at FROM user_settings WHERE user_id = ?', [userId]);
   return rows.length > 0 ? rows[0] : null;
 }
 
@@ -130,7 +140,7 @@ async function updateUserSettings(userId, data) {
     params
   );
 
-  const rows = await query('SELECT * FROM user_settings WHERE user_id = ?', [userId]);
+  const rows = await query('SELECT id, user_id, hourly_rate, night_rate, standard_hours, factory_name, factory_city, reminder_enabled, reminder_time, font_scale, updated_at FROM user_settings WHERE user_id = ?', [userId]);
   return rows.length > 0 ? rows[0] : null;
 }
 

@@ -13,9 +13,18 @@ async function authenticate(req, res, next) {
 
     const token = authHeader.replace('Bearer ', '');
 
-    const isBlacklisted = await redis.get(`blacklist:${token}`);
-    if (isBlacklisted) {
-      return res.status(401).json(error(ERROR_CODES.UNAUTHORIZED.code, '登录已过期，请重新登录'));
+    // Check token blacklist. If Redis is unavailable, fail-open (allow the request)
+    // rather than blocking all authenticated traffic. The JWT signature is still
+    // verified below, so only revoked tokens would slip through temporarily.
+    try {
+      const isBlacklisted = await redis.get(`blacklist:${token}`);
+      if (isBlacklisted) {
+        return res.status(401).json(error(ERROR_CODES.UNAUTHORIZED.code, '登录已过期，请重新登录'));
+      }
+    } catch (redisErr) {
+      // Redis down: log and continue. A revoked token may briefly work, but
+      // blocking all auth traffic is worse for availability.
+      logger.warn('Redis blacklist check failed, failing open:', redisErr.message);
     }
 
     let decoded;

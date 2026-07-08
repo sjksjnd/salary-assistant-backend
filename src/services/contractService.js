@@ -116,23 +116,44 @@ async function saveDetectionRecord(userId, type, description, resultText, result
     'INSERT INTO detection_records (user_id, type, description, result_text, result_detail) VALUES (?, ?, ?, ?, ?)',
     [userId, type, description, resultText, JSON.stringify(resultDetail)]
   );
-  const rows = await query('SELECT * FROM detection_records WHERE id = ?', [result.insertId]);
+  const rows = await query('SELECT id, user_id, type, description, result_text, result_detail, created_at FROM detection_records WHERE id = ?', [result.insertId]);
   return rows[0];
 }
 
-async function getDetectionRecords(userId, type) {
-  let queryText = 'SELECT * FROM detection_records WHERE user_id = ?';
-  let params = [userId];
+async function getDetectionRecords(userId, type, page, pageSize) {
+  // Pagination: page starts at 1, pageSize capped at 50.
+  const limit = Math.min(Math.max(parseInt(pageSize, 10) || 20, 1), 50);
+  const offset = Math.max((parseInt(page, 10) || 1) - 1, 0) * limit;
+
+  let countSql = 'SELECT COUNT(*) AS total FROM detection_records WHERE user_id = ?';
+  let countParams = [userId];
+
+  let listSql = 'SELECT id, type, description, result_text, result_detail, created_at FROM detection_records WHERE user_id = ?';
+  let listParams = [userId];
 
   if (type) {
-    queryText += ' AND type = ?';
-    params.push(type);
+    countSql += ' AND type = ?';
+    countParams.push(type);
+    listSql += ' AND type = ?';
+    listParams.push(type);
   }
 
-  queryText += ' ORDER BY created_at DESC';
+  listSql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  listParams.push(limit, offset);
 
-  const rows = await query(queryText, params);
-  return rows;
+  const [countRows, rows] = await Promise.all([
+    query(countSql, countParams),
+    query(listSql, listParams),
+  ]);
+
+  const total = countRows[0] ? countRows[0].total : 0;
+  return {
+    items: rows,
+    total,
+    page: Math.floor(offset / limit) + 1,
+    pageSize: limit,
+    hasMore: offset + limit < total,
+  };
 }
 
 async function deleteDetectionRecord(userId, id) {

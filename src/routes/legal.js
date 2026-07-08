@@ -17,14 +17,15 @@ router.get('/articles', authenticate, async (req, res) => {
     } else if (category) {
       articles = await legalService.getArticlesByCategory(category);
     } else if (keyword) {
-      articles = await legalService.searchArticles(keyword);
+      articles = await legalService.searchArticles(keyword, limit);
     } else {
       return res.status(400).json(error(40001, '请提供 category、scenario、keyword 或 q 参数'));
     }
 
     res.json(success(articles));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Legal articles error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -36,7 +37,8 @@ router.get('/articles/:source', authenticate, async (req, res) => {
     }
     res.json(success(article));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Legal articles error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -44,7 +46,8 @@ router.get('/scenarios', authenticate, async (req, res) => {
   try {
     res.json(success(legalService.SCENARIO_SOURCE_MAP));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Legal articles error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -53,7 +56,8 @@ router.get('/categories', authenticate, async (req, res) => {
     const categories = await legalService.getAllCategories();
     res.json(success(categories));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Legal articles error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -84,7 +88,7 @@ router.post('/ask', authenticate, rateLimiters.contract, async (req, res) => {
       totalResults: results.length
     }));
   } catch (err) {
-    console.error('Legal ask error:', err);
+    logger.error('Legal ask error:', err);
     res.status(500).json(error(50001, '查询失败，请稍后重试'));
   }
 });

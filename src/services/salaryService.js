@@ -5,13 +5,13 @@ async function saveDeduction(userId, month, category, amount, note, recordDate) 
     'INSERT INTO salary_deductions (user_id, month, category, amount, note, record_date) VALUES (?, ?, ?, ?, ?, ?)',
     [userId, month, category, amount, note || null, recordDate]
   );
-  const rows = await query('SELECT * FROM salary_deductions WHERE id = ?', [result.insertId]);
+  const rows = await query('SELECT id, user_id, month, category, amount, note, record_date, created_at FROM salary_deductions WHERE id = ?', [result.insertId]);
   return rows[0];
 }
 
 async function getDeductionsByMonth(userId, month) {
   const rows = await query(
-    'SELECT * FROM salary_deductions WHERE user_id = ? AND month = ? ORDER BY record_date',
+    'SELECT id, user_id, month, category, amount, note, record_date, created_at FROM salary_deductions WHERE user_id = ? AND month = ? ORDER BY record_date',
     [userId, month]
   );
   return rows;
@@ -30,13 +30,13 @@ async function saveExpense(userId, month, category, amount, note, recordDate) {
     'INSERT INTO salary_expenses (user_id, month, category, amount, note, record_date) VALUES (?, ?, ?, ?, ?, ?)',
     [userId, month, category, amount, note || null, recordDate]
   );
-  const rows = await query('SELECT * FROM salary_expenses WHERE id = ?', [result.insertId]);
+  const rows = await query('SELECT id, user_id, month, category, amount, note, record_date, created_at FROM salary_expenses WHERE id = ?', [result.insertId]);
   return rows[0];
 }
 
 async function getExpensesByMonth(userId, month) {
   const rows = await query(
-    'SELECT * FROM salary_expenses WHERE user_id = ? AND month = ? ORDER BY record_date',
+    'SELECT id, user_id, month, category, amount, note, record_date, created_at FROM salary_expenses WHERE user_id = ? AND month = ? ORDER BY record_date',
     [userId, month]
   );
   return rows;
@@ -55,13 +55,13 @@ async function saveAdvance(userId, month, amount, note, recordDate) {
     'INSERT INTO salary_advances (user_id, month, amount, note, record_date) VALUES (?, ?, ?, ?, ?)',
     [userId, month, amount, note || null, recordDate]
   );
-  const rows = await query('SELECT * FROM salary_advances WHERE id = ?', [result.insertId]);
+  const rows = await query('SELECT id, user_id, month, amount, note, record_date, created_at FROM salary_advances WHERE id = ?', [result.insertId]);
   return rows[0];
 }
 
 async function getAdvancesByMonth(userId, month) {
   const rows = await query(
-    'SELECT * FROM salary_advances WHERE user_id = ? AND month = ? ORDER BY record_date',
+    'SELECT id, user_id, month, amount, note, record_date, created_at FROM salary_advances WHERE user_id = ? AND month = ? ORDER BY record_date',
     [userId, month]
   );
   return rows;
@@ -83,13 +83,13 @@ async function saveBill(userId, month, data) {
     [userId, month, grossSalary, actualSalary, totalDeductions, totalExpenses, totalAdvances, remaining, isSettled || false]
   );
   
-  const rows = await query('SELECT * FROM salary_bills WHERE user_id = ? AND month = ?', [userId, month]);
+  const rows = await query('SELECT id, user_id, month, gross_salary, actual_salary, total_deductions, total_expenses, total_advances, remaining, is_settled, archived_at FROM salary_bills WHERE user_id = ? AND month = ?', [userId, month]);
   return rows[0];
 }
 
 async function getBill(userId, month) {
   const rows = await query(
-    'SELECT * FROM salary_bills WHERE user_id = ? AND month = ?',
+    'SELECT id, user_id, month, gross_salary, actual_salary, total_deductions, total_expenses, total_advances, remaining, is_settled, archived_at FROM salary_bills WHERE user_id = ? AND month = ?',
     [userId, month]
   );
   return rows.length > 0 ? rows[0] : null;
@@ -97,7 +97,7 @@ async function getBill(userId, month) {
 
 async function getBillsByYear(userId, year) {
   const rows = await query(
-    'SELECT * FROM salary_bills WHERE user_id = ? AND month LIKE ? ORDER BY month',
+    'SELECT id, user_id, month, gross_salary, actual_salary, total_deductions, total_expenses, total_advances, remaining, is_settled, archived_at FROM salary_bills WHERE user_id = ? AND month LIKE ? ORDER BY month',
     [userId, `${year}-%`]
   );
   return rows;

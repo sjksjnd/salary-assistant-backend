@@ -1,15 +1,20 @@
 const redis = require('../config/redis');
 const config = require('../config');
 const { error, ERROR_CODES } = require('../utils/response');
+const logger = require('../utils/logger');
 
 /**
  * Create a rate limiter middleware backed by Redis.
- * Sliding-window style using INCR + EXPIRE.
+ * Uses fixed-window counting via INCR + EXPIRE (not a true sliding window).
  * @param {number} limit - max requests per window
  * @param {number} windowSeconds - time window in seconds
+ * @param {object} [options]
+ * @param {boolean} [options.failOpen=true] - when Redis fails, allow (true) or deny (false) the request.
+ *        Sensitive endpoints (login) should set failOpen=false to prevent brute force via Redis outages.
  * @returns {Function} Express middleware
  */
-function createRateLimiter(limit, windowSeconds = 60) {
+function createRateLimiter(limit, windowSeconds = 60, options = {}) {
+  const failOpen = options.failOpen !== false;
   return async function rateLimiter(req, res, next) {
     const key = `rate:${req.ip}:${req.path}`;
     try {
@@ -25,15 +30,20 @@ function createRateLimiter(limit, windowSeconds = 60) {
 
       next();
     } catch (err) {
-      // If Redis fails, allow the request through (fail-open)
-      next();
+      // Redis unavailable: log and apply fail-open/fail-closed policy.
+      logger.warn('Rate limiter Redis error:', err.message);
+      if (failOpen) {
+        return next();
+      }
+      return res.status(429).json(error(ERROR_CODES.RATE_LIMITED.code, '服务繁忙，请稍后重试'));
     }
   };
 }
 
 const rateLimiters = {
   global: createRateLimiter(config.rateLimit.global),
-  login: createRateLimiter(config.rateLimit.login),
+  // Login is a sensitive anti-abuse endpoint: fail-closed so Redis outages do not disable brute-force protection.
+  login: createRateLimiter(config.rateLimit.login, 60, { failOpen: false }),
   contract: createRateLimiter(config.rateLimit.contract),
   calc: createRateLimiter(config.rateLimit.calc),
 };

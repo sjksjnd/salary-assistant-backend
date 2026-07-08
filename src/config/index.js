@@ -2,16 +2,30 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+const env = process.env.NODE_ENV || 'development';
+
+// Security: in production, JWT_SECRET must be set explicitly (>= 32 chars).
+// Failing fast at boot is safer than silently using a known default.
+if (env === 'production') {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('[FATAL] JWT_SECRET must be set in production with at least 32 characters.');
+  }
+  if (!process.env.WX_APPID || !process.env.WX_SECRET) {
+    throw new Error('[FATAL] WX_APPID and WX_SECRET must be set in production.');
+  }
+}
+
 const config = {
-  env: process.env.NODE_ENV || 'development',
+  env,
   port: parseInt(process.env.PORT, 10) || 3000,
 
   // Database
   db: {
     host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
+    port: parseInt(process.env.DB_PORT, 10) || 3306,
     name: process.env.DB_NAME || 'salary_assistant',
-    user: process.env.DB_USER || 'postgres',
+    user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     max: 20, // max connections in pool
     idleTimeoutMillis: 30000,

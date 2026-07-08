@@ -4,6 +4,7 @@ const compensationService = require('../services/compensationService');
 const { authenticate } = require('../middleware/auth');
 const { rateLimiters } = require('../middleware/rateLimiter');
 const { success, error } = require('../utils/response');
+const logger = require('../utils/logger');
 
 // Questions endpoint does not require auth (so users can see the form)
 router.get('/questions', async (req, res) => {
@@ -11,7 +12,8 @@ router.get('/questions', async (req, res) => {
     const questions = await compensationService.getQuestions();
     res.json(success(questions));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Compensation API error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -27,7 +29,8 @@ router.post('/calculate', authenticate, rateLimiters.calc, async (req, res) => {
 
     res.json(success(result));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Compensation API error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -35,7 +38,8 @@ router.get('/evidence', authenticate, async (req, res) => {
   try {
     res.json(success(compensationService.EVIDENCE_LIST));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Compensation API error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 

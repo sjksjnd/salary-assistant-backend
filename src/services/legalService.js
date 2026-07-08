@@ -1,6 +1,16 @@
 const { query } = require('../config/database');
+const redis = require('../config/redis');
 const pkulawService = require('./pkulawService');
 const logger = require('../utils/logger');
+
+// Cache TTL for smartSearch results (seconds). Legal articles change rarely.
+const SEARCH_CACHE_TTL = 600; // 10 minutes
+
+function buildSearchCacheKey(q, limit) {
+  // Normalize query to increase cache hit rate.
+  const normalized = (q || '').trim().toLowerCase();
+  return `legal:search:${Buffer.from(normalized).toString('base64')}:${limit}`;
+}
 
 const STOP_WORDS = ['的', '了', '是', '在', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这', '那', '什么', '怎么', '为什么', '可以', '吗', '呢', '啊', '吧', '呀', '哦', '嗯', '请问', '您好', '你好', '请问一下', '想咨询一下', '关于', '对于', '来说', '一下', '个', '之', '而', '及', '与', '或', '等', '等等', '哪些', '多少', '几', '如何', '怎样', '怎么样'];
 
@@ -123,9 +133,9 @@ async function smartSearch(query, limit, userId) {
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
     return [];
   }
-  
+
   const maxResults = limit || 10;
-  
+
   if (pkulawService.isEnabled()) {
     try {
       const pkulawResults = await pkulawService.semanticSearch(query, maxResults, userId);
@@ -141,15 +151,26 @@ async function smartSearch(query, limit, userId) {
       logger.warn('PKULaw MCP search failed, fallback to local:', err.message);
     }
   }
-  
+
+  // Local fallback path: check Redis cache first (skipped for personalized PKULaw results).
+  const cacheKey = buildSearchCacheKey(query, maxResults);
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (cacheErr) {
+    logger.warn('Legal search cache read failed:', cacheErr.message);
+  }
+
   const queryTokens = tokenize(query);
   if (queryTokens.length === 0) {
     return [];
   }
-  
-  const rows = await query('SELECT * FROM legal_articles ORDER BY id');
+
+  const rows = await query('SELECT id, category, source, title, original_text, keywords, applicable_scenarios, created_at FROM legal_articles ORDER BY id');
   const articles = rows.map(normalize);
-  
+
   const results = [];
   for (const article of articles) {
     const { score, matchedKeywords } = calculateScore(article, queryTokens);
@@ -164,15 +185,24 @@ async function smartSearch(query, limit, userId) {
       });
     }
   }
-  
+
   results.sort((a, b) => b.score - a.score);
-  
-  return results.slice(0, maxResults);
+
+  const finalResults = results.slice(0, maxResults);
+
+  // Cache the local search results (fire-and-forget, fail-open).
+  try {
+    await redis.setex(cacheKey, SEARCH_CACHE_TTL, JSON.stringify(finalResults));
+  } catch (cacheErr) {
+    logger.warn('Legal search cache write failed:', cacheErr.message);
+  }
+
+  return finalResults;
 }
 
 async function getArticlesByCategory(category) {
   const rows = await query(
-    'SELECT * FROM legal_articles WHERE category = ? ORDER BY id',
+    'SELECT id, category, source, title, original_text, keywords, applicable_scenarios, created_at FROM legal_articles WHERE category = ? ORDER BY id',
     [category]
   );
   return rows.map(normalize);
@@ -185,26 +215,28 @@ async function getArticlesByScenarios(scenarios) {
   const placeholders = list.map(() => 'JSON_CONTAINS(applicable_scenarios, JSON_QUOTE(?))').join(' OR ');
   const params = list.map(s => String(s));
   const rows = await query(
-    `SELECT * FROM legal_articles WHERE ${placeholders} ORDER BY id`,
+    `SELECT id, category, source, title, original_text, keywords, applicable_scenarios, created_at FROM legal_articles WHERE ${placeholders} ORDER BY id`,
     params
   );
   return rows.map(normalize);
 }
 
-async function searchArticles(keyword) {
+async function searchArticles(keyword, limit) {
   if (!keyword || typeof keyword !== 'string') return [];
+  const maxResults = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
   const like = `%${keyword}%`;
   const rows = await query(
-    `SELECT * FROM legal_articles
+    `SELECT id, category, source, title, original_text, keywords, applicable_scenarios, created_at FROM legal_articles
      WHERE title LIKE ? OR source LIKE ? OR keywords LIKE ?
-     ORDER BY id`,
-    [like, like, like]
+     ORDER BY id
+     LIMIT ?`,
+    [like, like, like, maxResults]
   );
   return rows.map(normalize);
 }
 
 async function getArticleBySource(source) {
-  const rows = await query('SELECT * FROM legal_articles WHERE source = ?', [source]);
+  const rows = await query('SELECT id, category, source, title, original_text, keywords, applicable_scenarios, created_at FROM legal_articles WHERE source = ?', [source]);
   return rows.length ? normalize(rows[0]) : null;
 }
 
@@ -263,7 +295,7 @@ async function getSourcesForScenarios(scenarios, userId) {
 
   const placeholders = Array.from(sourceSet).map(() => '?').join(',');
   const rows = await query(
-    `SELECT * FROM legal_articles WHERE source IN (${placeholders}) ORDER BY id`,
+    `SELECT id, category, source, title, original_text, keywords, applicable_scenarios, created_at FROM legal_articles WHERE source IN (${placeholders}) ORDER BY id`,
     Array.from(sourceSet)
   );
   return rows.map(normalize);

@@ -42,7 +42,7 @@ async function calcMonthlySalary(userId, month, settings) {
       workedHours = standardHours;
     }
     
-    const dailyPay = calcDailySalary(hourlyRate, standardHours, workedHours, shift);
+    const dailyPay = await calcDailySalary(hourlyRate, standardHours, workedHours, shift);
     totalSalary += dailyPay;
     
     dailyDetails.push({

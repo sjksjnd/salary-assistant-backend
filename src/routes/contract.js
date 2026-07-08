@@ -4,8 +4,10 @@ const contractService = require('../services/contractService');
 const { authenticate } = require('../middleware/auth');
 const { rateLimiters } = require('../middleware/rateLimiter');
 const { success, error } = require('../utils/response');
+const logger = require('../utils/logger');
 
-router.post('/ocr', authenticate, rateLimiters.contract, async (req, res) => {
+// OCR endpoint accepts base64 images which can be large; raise the body limit for this route only.
+router.post('/ocr', authenticate, rateLimiters.contract, express.json({ limit: '15mb' }), async (req, res) => {
   try {
     const { image } = req.body;
     if (!image) {
@@ -13,14 +15,14 @@ router.post('/ocr', authenticate, rateLimiters.contract, async (req, res) => {
     }
 
     const ocrResult = await contractService.ocrImage(image);
-    
+
     if (!ocrResult.success) {
       return res.status(500).json(error(50001, 'OCR识别失败'));
     }
 
     res.json(success({ text: ocrResult.text }, '识别成功'));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    res.status(500).json(error(50001, 'OCR识别失败'));
   }
 });
 
@@ -43,17 +45,19 @@ router.post('/analyze', authenticate, rateLimiters.contract, async (req, res) =>
 
     res.json(success(analysis));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Contract API error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
 router.get('/records', authenticate, async (req, res) => {
   try {
-    const { type } = req.query;
-    const records = await contractService.getDetectionRecords(req.userId, type);
-    res.json(success(records));
+    const { type, page, pageSize } = req.query;
+    const result = await contractService.getDetectionRecords(req.userId, type, page, pageSize);
+    res.json(success(result));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Contract API error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 
@@ -64,7 +68,8 @@ router.delete('/records/:id', authenticate, async (req, res) => {
     if (!deleted) return res.status(404).json(error(40401, '记录不存在'));
     res.json(success(null, '删除成功'));
   } catch (err) {
-    res.status(500).json(error(50001, err.message));
+    logger.error('Contract API error:', err);
+    res.status(500).json(error(50001, '服务器内部错误'));
   }
 });
 

@@ -6,13 +6,13 @@ async function saveWorkhour(userId, recordDate, hours, shift, payAmount) {
     [userId, recordDate, hours, shift, payAmount || null]
   );
 
-  const rows = await query('SELECT * FROM workhour_records WHERE user_id = ? AND record_date = ?', [userId, recordDate]);
+  const rows = await query('SELECT id, user_id, record_date, hours, shift, pay_amount, created_at, updated_at FROM workhour_records WHERE user_id = ? AND record_date = ?', [userId, recordDate]);
   return rows[0];
 }
 
 async function getWorkhour(userId, recordDate) {
   const rows = await query(
-    'SELECT * FROM workhour_records WHERE user_id = ? AND record_date = ?',
+    'SELECT id, user_id, record_date, hours, shift, pay_amount, created_at, updated_at FROM workhour_records WHERE user_id = ? AND record_date = ?',
     [userId, recordDate]
   );
   return rows.length > 0 ? rows[0] : null;
@@ -24,7 +24,7 @@ async function getWorkhoursByMonth(userId, month) {
   const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0];
   
   const rows = await query(
-    'SELECT * FROM workhour_records WHERE user_id = ? AND record_date BETWEEN ? AND ? ORDER BY record_date',
+    'SELECT id, user_id, record_date, hours, shift, pay_amount, created_at, updated_at FROM workhour_records WHERE user_id = ? AND record_date BETWEEN ? AND ? ORDER BY record_date',
     [userId, startDate, endDate]
   );
   return rows;
@@ -32,7 +32,7 @@ async function getWorkhoursByMonth(userId, month) {
 
 async function getWorkhoursByRange(userId, startDate, endDate) {
   const rows = await query(
-    'SELECT * FROM workhour_records WHERE user_id = ? AND record_date BETWEEN ? AND ? ORDER BY record_date',
+    'SELECT id, user_id, record_date, hours, shift, pay_amount, created_at, updated_at FROM workhour_records WHERE user_id = ? AND record_date BETWEEN ? AND ? ORDER BY record_date',
     [userId, startDate, endDate]
   );
   return rows;
@@ -66,12 +66,29 @@ async function getMonthlySummary(userId, month) {
 }
 
 async function batchSaveWorkhours(userId, records) {
-  const results = [];
-  for (const record of records) {
-    const result = await saveWorkhour(userId, record.recordDate, record.hours, record.shift, record.payAmount);
-    results.push(result);
+  if (!records || records.length === 0) return [];
+
+  // Build a single batch INSERT with ON DUPLICATE KEY UPDATE to avoid N+1 queries.
+  const placeholders = [];
+  const params = [];
+  const dates = [];
+  for (const r of records) {
+    placeholders.push('(?, ?, ?, ?, ?)');
+    params.push(userId, r.recordDate || r.date, r.hours, r.shift || 'day', r.payAmount || r.wage || null);
+    dates.push(r.recordDate || r.date);
   }
-  return results;
+
+  const sql = `INSERT INTO workhour_records (user_id, record_date, hours, shift, pay_amount) VALUES ${placeholders.join(', ')} ON DUPLICATE KEY UPDATE hours = VALUES(hours), shift = VALUES(shift), pay_amount = VALUES(pay_amount), updated_at = NOW()`;
+
+  await queryInsert(sql, params);
+
+  // Single SELECT to fetch all affected rows (avoids N separate SELECTs).
+  const datePlaceholders = dates.map(() => '?').join(', ');
+  const rows = await query(
+    `SELECT id, user_id, record_date, hours, shift, pay_amount, created_at, updated_at FROM workhour_records WHERE user_id = ? AND record_date IN (${datePlaceholders}) ORDER BY record_date`,
+    [userId, ...dates]
+  );
+  return rows;
 }
 
 module.exports = {

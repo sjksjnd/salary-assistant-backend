@@ -5,6 +5,9 @@ jest.mock('../src/services/configService', () => ({
     if (key === 'min_wage') {
       return { '广东': 2300 };
     }
+    if (key === 'avg_salary') {
+      return { '广东': 2300 };
+    }
     return {};
   },
 }));
@@ -23,6 +26,21 @@ describe('calcDailySalary', () => {
   test('night shift', async () => {
     const result = await calcService.calcDailySalary(25, 8, 8, 'night');
     expect(result).toBe(300);
+  });
+});
+
+describe('calcMonthlySalary', () => {
+  test('calculates weekday salary details', async () => {
+    const result = await calcService.calcMonthlySalary(1, '2024-01', {
+      hourly_rate: 25,
+      standard_hours: 8,
+    });
+
+    expect(result.daysInMonth).toBe(31);
+    expect(result.totalSalary).toBe(4600);
+    expect(result.dailyDetails).toHaveLength(31);
+    expect(result.dailyDetails[0].dailyPay).toBe(200);
+    expect(typeof result.dailyDetails[0].dailyPay).toBe('number');
   });
 });
 
