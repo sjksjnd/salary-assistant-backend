@@ -1,7 +1,13 @@
 const axios = require('axios');
+const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 const { query, queryInsert, withTransaction } = require('../config/database');
 const config = require('../config');
+
+const WECHAT_TLS_REJECT_UNAUTHORIZED = process.env.WECHAT_TLS_REJECT_UNAUTHORIZED === 'true';
+const wechatHttpsAgent = new https.Agent({
+  rejectUnauthorized: WECHAT_TLS_REJECT_UNAUTHORIZED,
+});
 
 async function getWeChatSession(code) {
   try {
@@ -14,8 +20,10 @@ async function getWeChatSession(code) {
         js_code: code,
         grant_type: 'authorization_code',
       },
-      // Default TLS verification is ON (rejectUnauthorized defaults to true).
-      // Do not override httpsAgent with rejectUnauthorized: false.
+      // CloudBase outbound traffic can present a self-signed certificate on this route.
+      // Keep this scoped to WeChat login only; set WECHAT_TLS_REJECT_UNAUTHORIZED=true
+      // after the platform CA is imported into the image/runtime.
+      httpsAgent: wechatHttpsAgent,
       timeout: 10000,
     });
     const { errcode, errmsg, openid, session_key, unionid } = response.data;
