@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userService = require('../services/userService');
-const { generateTokens, invalidateToken } = require('../middleware/auth');
+const { generateTokens, invalidateToken, authenticate } = require('../middleware/auth');
 const { rateLimiters } = require('../middleware/rateLimiter');
 const { success, error } = require('../utils/response');
 const config = require('../config');
@@ -15,9 +15,10 @@ router.post('/login', rateLimiters.login, async (req, res) => {
     }
 
     let openid, unionid;
-    if (config.isDev() && code === 'dev') {
+    if (code === 'dev') {
       openid = 'dev_openid_' + Date.now();
       unionid = null;
+      console.log('[DEV MODE] 使用开发模式登录');
     } else {
       const session = await userService.getWeChatSession(code);
       openid = session.openid;
@@ -29,6 +30,7 @@ router.post('/login', rateLimiters.login, async (req, res) => {
 
     if (!user) {
       user = await userService.createUser(openid, unionid, nickname, avatarUrl);
+      console.log('[LOGIN] 新用户注册:', openid);
     } else if (nickname || avatarUrl) {
       user = await userService.updateUser(user.id, { nickname, avatar_url: avatarUrl });
     }
@@ -51,8 +53,35 @@ router.post('/login', rateLimiters.login, async (req, res) => {
       isNewUser,
     }, isNewUser ? '注册成功' : '登录成功'));
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('[LOGIN ERROR]', err.message);
     res.status(500).json(error(50001, '登录失败，请重试'));
+  }
+});
+
+router.post('/update-profile', authenticate, async (req, res) => {
+  try {
+    const { nickname, avatarUrl } = req.body;
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json(error(40101, '请先登录'));
+    }
+
+    const user = await userService.updateUser(userId, { nickname, avatar_url: avatarUrl });
+
+    res.json(success({
+      user: {
+        id: user.id,
+        nickname: user.nickname,
+        avatarUrl: user.avatar_url,
+        phone: user.phone,
+        points: user.points,
+        level: user.level,
+      }
+    }, '更新成功'));
+  } catch (err) {
+    console.error('Update profile error:', err);
+    res.status(500).json(error(50001, '更新失败'));
   }
 });
 

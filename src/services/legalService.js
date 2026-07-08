@@ -1,10 +1,175 @@
 const { query } = require('../config/database');
+const pkulawService = require('./pkulawService');
+const logger = require('../utils/logger');
 
-/**
- * Find legal articles by category.
- * @param {string} category - e.g. 'contract', 'wage', 'overtime', 'social', 'termination'
- * @returns {Promise<Array>}
- */
+const STOP_WORDS = ['的', '了', '是', '在', '我', '有', '和', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着', '没有', '看', '好', '自己', '这', '那', '什么', '怎么', '为什么', '可以', '吗', '呢', '啊', '吧', '呀', '哦', '嗯', '请问', '您好', '你好', '请问一下', '想咨询一下', '关于', '对于', '来说', '一下', '个', '之', '而', '及', '与', '或', '等', '等等', '哪些', '多少', '几', '如何', '怎样', '怎么样'];
+
+const KEYWORD_WEIGHTS = {
+  title: 3,
+  keyword: 2,
+  source: 2,
+  text: 1
+};
+
+function tokenize(text) {
+  if (!text || typeof text !== 'string') return [];
+  
+  const tokens = [];
+  
+  const cleanText = text.replace(/[，。！？、；：""''（）《》【】\n\r\t,.!?;:\'\"\(\)\[\]]/g, ' ');
+  
+  for (let len = 4; len >= 2; len--) {
+    for (let i = 0; i <= cleanText.length - len; i++) {
+      const word = cleanText.substring(i, i + len).trim();
+      if (word.length >= 2 && STOP_WORDS.indexOf(word) === -1 && !/^\d+$/.test(word)) {
+        tokens.push(word);
+      }
+    }
+  }
+  
+  const singleChars = cleanText.split(' ').filter(s => s.length === 1 && STOP_WORDS.indexOf(s) === -1);
+  tokens.push(...singleChars);
+  
+  return [...new Set(tokens)];
+}
+
+function calculateScore(article, queryTokens) {
+  let score = 0;
+  let matchedKeywords = [];
+  
+  const title = article.title || '';
+  const source = article.source || '';
+  const text = article.original_text || '';
+  const keywords = Array.isArray(article.keywords) ? article.keywords : [];
+  
+  for (const token of queryTokens) {
+    const lowerToken = token.toLowerCase();
+    
+    if (title.toLowerCase().indexOf(lowerToken) !== -1) {
+      score += KEYWORD_WEIGHTS.title;
+      if (matchedKeywords.indexOf(token) === -1) matchedKeywords.push(token);
+    }
+    
+    if (source.toLowerCase().indexOf(lowerToken) !== -1) {
+      score += KEYWORD_WEIGHTS.source;
+      if (matchedKeywords.indexOf(token) === -1) matchedKeywords.push(token);
+    }
+    
+    for (const kw of keywords) {
+      if (String(kw).toLowerCase().indexOf(lowerToken) !== -1) {
+        score += KEYWORD_WEIGHTS.keyword;
+        if (matchedKeywords.indexOf(token) === -1) matchedKeywords.push(token);
+        break;
+      }
+    }
+    
+    if (text.toLowerCase().indexOf(lowerToken) !== -1) {
+      score += KEYWORD_WEIGHTS.text;
+      if (matchedKeywords.indexOf(token) === -1) matchedKeywords.push(token);
+    }
+  }
+  
+  const matchRatio = matchedKeywords.length / Math.max(queryTokens.length, 1);
+  score = score * (0.5 + matchRatio * 0.5);
+  
+  return { score, matchedKeywords };
+}
+
+function getCategoryLabel(category) {
+  const labels = {
+    'contract': '劳动合同',
+    'wage': '工资报酬',
+    'overtime': '加班工时',
+    'social': '社会保险',
+    'termination': '解除补偿',
+    'dispute': '争议处理',
+    'other': '其他权益'
+  };
+  return labels[category] || category;
+}
+
+function buildQuickAnswer(article, query) {
+  const text = article.original_text || '';
+  return buildQuickAnswerFromText(text, query);
+}
+
+function buildQuickAnswerFromText(text, query) {
+  if (!text || !query) return '';
+  
+  const queryTokens = tokenize(query);
+  
+  let bestSnippet = '';
+  let bestScore = 0;
+  
+  const sentences = text.split(/[。；\n]/).filter(s => s.trim().length > 5);
+  
+  for (const sentence of sentences) {
+    let score = 0;
+    for (const token of queryTokens) {
+      if (sentence.toLowerCase().indexOf(token.toLowerCase()) !== -1) {
+        score += 1;
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestSnippet = sentence.trim();
+    }
+  }
+  
+  return bestSnippet;
+}
+
+async function smartSearch(query, limit, userId) {
+  if (!query || typeof query !== 'string' || query.trim().length === 0) {
+    return [];
+  }
+  
+  const maxResults = limit || 10;
+  
+  if (pkulawService.isEnabled()) {
+    try {
+      const pkulawResults = await pkulawService.semanticSearch(query, maxResults, userId);
+      if (pkulawResults && pkulawResults.length > 0) {
+        logger.info('PKULaw MCP search success:', query, pkulawResults.length);
+        return pkulawResults.map(item => ({
+          ...item,
+          quickAnswer: item.originalText ? buildQuickAnswerFromText(item.originalText, query) : '',
+          fromPkulaw: true
+        }));
+      }
+    } catch (err) {
+      logger.warn('PKULaw MCP search failed, fallback to local:', err.message);
+    }
+  }
+  
+  const queryTokens = tokenize(query);
+  if (queryTokens.length === 0) {
+    return [];
+  }
+  
+  const rows = await query('SELECT * FROM legal_articles ORDER BY id');
+  const articles = rows.map(normalize);
+  
+  const results = [];
+  for (const article of articles) {
+    const { score, matchedKeywords } = calculateScore(article, queryTokens);
+    if (score > 0) {
+      results.push({
+        ...article,
+        score: Math.round(score * 100) / 100,
+        matchedKeywords,
+        categoryLabel: getCategoryLabel(article.category),
+        quickAnswer: buildQuickAnswer(article, query),
+        fromPkulaw: false
+      });
+    }
+  }
+  
+  results.sort((a, b) => b.score - a.score);
+  
+  return results.slice(0, maxResults);
+}
+
 async function getArticlesByCategory(category) {
   const rows = await query(
     'SELECT * FROM legal_articles WHERE category = ? ORDER BY id',
@@ -13,11 +178,6 @@ async function getArticlesByCategory(category) {
   return rows.map(normalize);
 }
 
-/**
- * Find legal articles by applicable scenario tag(s).
- * @param {string|string[]} scenarios
- * @returns {Promise<Array>}
- */
 async function getArticlesByScenarios(scenarios) {
   const list = Array.isArray(scenarios) ? scenarios : [scenarios];
   if (list.length === 0) return [];
@@ -31,11 +191,6 @@ async function getArticlesByScenarios(scenarios) {
   return rows.map(normalize);
 }
 
-/**
- * Search articles by keyword (simple LIKE over keywords JSON and title/source).
- * @param {string} keyword
- * @returns {Promise<Array>}
- */
 async function searchArticles(keyword) {
   if (!keyword || typeof keyword !== 'string') return [];
   const like = `%${keyword}%`;
@@ -48,20 +203,19 @@ async function searchArticles(keyword) {
   return rows.map(normalize);
 }
 
-/**
- * Get a single article by source citation.
- * @param {string} source - e.g. '《劳动合同法》第19条'
- * @returns {Promise<Object|null>}
- */
 async function getArticleBySource(source) {
   const rows = await query('SELECT * FROM legal_articles WHERE source = ?', [source]);
   return rows.length ? normalize(rows[0]) : null;
 }
 
-/**
- * Map scenario codes to authoritative legal sources.
- * This is used to cross-check rule engine conclusions against the knowledge base.
- */
+async function getAllCategories() {
+  const rows = await query('SELECT DISTINCT category FROM legal_articles ORDER BY category');
+  return rows.map(r => ({
+    key: r.category,
+    label: getCategoryLabel(r.category)
+  }));
+}
+
 const SCENARIO_SOURCE_MAP = {
   probation_over_limit: ['《劳动合同法》第19条'],
   probation_salary_low: ['《劳动合同法》第20条'],
@@ -81,13 +235,25 @@ const SCENARIO_SOURCE_MAP = {
   forced_overtime: ['《劳动合同法》第31条', '《劳动法》第44条']
 };
 
-/**
- * Retrieve legal sources for given scenario codes.
- * @param {string|string[]} scenarios
- * @returns {Promise<Array>}
- */
-async function getSourcesForScenarios(scenarios) {
+async function getSourcesForScenarios(scenarios, userId) {
   const list = Array.isArray(scenarios) ? scenarios : [scenarios];
+  if (list.length === 0) return [];
+
+  if (pkulawService.isEnabled()) {
+    const allKeywords = list
+      .map(s => SCENARIO_KEYWORD_MAP[s] || s)
+      .join(' ');
+
+    try {
+      const articles = await pkulawService.keywordSearch(allKeywords, Math.min(list.length * 2, 15), userId);
+      if (articles && articles.length > 0) {
+        return articles.map(a => ({ ...a, fromPkulaw: true }));
+      }
+    } catch (err) {
+      logger.warn('PKULaw search failed for scenarios:', err.message);
+    }
+  }
+
   const sourceSet = new Set();
   for (const s of list) {
     const sources = SCENARIO_SOURCE_MAP[s] || [];
@@ -103,10 +269,29 @@ async function getSourcesForScenarios(scenarios) {
   return rows.map(normalize);
 }
 
+const SCENARIO_KEYWORD_MAP = {
+  probation_over_limit: '试用期 劳动合同法第19条',
+  probation_salary_low: '试用期工资 劳动合同法第20条',
+  no_social_security: '社会保险 社会保险法第58条',
+  wage_arrears: '拖欠工资 劳动法第50条',
+  wage_deduction: '工资扣除 工资支付暂行规定第16条',
+  overtime_no_pay: '加班费 劳动法第44条',
+  no_rest_day: '休息休假 劳动法第38条',
+  severance_pay: '经济补偿 劳动合同法第47条',
+  unlawful_termination: '违法解除 赔偿金 劳动合同法第87条',
+  no_written_contract: '未签订劳动合同 双倍工资 劳动合同法第82条',
+  dismissal_without_cause: '无故辞退 经济补偿 劳动合同法第46条',
+  forced_resignation: '被迫辞职 经济补偿 劳动合同法第38条',
+  work_injury: '工伤 工伤保险条例',
+  maternity_leave: '产假 女职工劳动保护特别规定',
+  arbitration_timelimit: '仲裁时效 劳动争议调解仲裁法第27条',
+};
+
 function normalize(row) {
   return {
     id: row.id,
     category: row.category,
+    categoryLabel: getCategoryLabel(row.category),
     source: row.source,
     title: row.title,
     originalText: row.original_text,
@@ -131,5 +316,10 @@ module.exports = {
   searchArticles,
   getArticleBySource,
   getSourcesForScenarios,
-  SCENARIO_SOURCE_MAP
+  smartSearch,
+  getAllCategories,
+  tokenize,
+  calculateScore,
+  SCENARIO_SOURCE_MAP,
+  getCategoryLabel
 };

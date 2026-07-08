@@ -2,6 +2,8 @@ const axios = require('axios');
 const { query, queryInsert } = require('../config/database');
 const configService = require('./configService');
 const legalService = require('./legalService');
+const pkulawService = require('./pkulawService');
+const logger = require('../utils/logger');
 const config = require('../config');
 
 async function ocrImage(imageBase64) {
@@ -36,7 +38,7 @@ async function ocrImage(imageBase64) {
   }
 }
 
-async function analyzeContract(text) {
+async function analyzeContract(text, userId) {
   const rules = await configService.getConfig('contract_rules') || [];
   const issues = [];
   const scenarios = [];
@@ -59,13 +61,44 @@ async function analyzeContract(text) {
     }
   }
 
-  // Cross-check rule engine conclusions against the legal knowledge base.
   let legalArticles = [];
   try {
-    legalArticles = await legalService.getSourcesForScenarios(scenarios);
+    if (pkulawService.isEnabled() && scenarios.length > 0) {
+      const scenarioKeywordMap = {
+        probation_over_limit: '试用期 劳动合同法第19条',
+        probation_salary_low: '试用期工资 劳动合同法第20条',
+        no_social_security: '社会保险 社会保险法第58条',
+        wage_below_minimum: '最低工资 劳动法第48条',
+        no_overtime_pay: '加班费 劳动法第44条',
+        unreasonable_deduction: '工资扣除 工资支付暂行规定第16条',
+        no_rest_day: '休息休假 劳动法第38条',
+        vague_job_description: '工作内容 劳动合同法第17条',
+        non_compete: '竞业限制 劳动合同法第23条',
+        training_penalty: '培训违约金 劳动合同法第22条',
+      };
+
+      const allKeywords = scenarios
+        .map(s => scenarioKeywordMap[s] || s)
+        .join(' ');
+
+      try {
+        const articles = await pkulawService.keywordSearch(allKeywords, Math.min(scenarios.length * 2, 15), userId);
+        legalArticles = articles.map(article => ({
+          ...article,
+          fromPkulaw: true
+        }));
+      } catch (err) {
+        logger.warn('PKULaw search failed for contract analysis:', err.message);
+      }
+
+      if (legalArticles.length === 0) {
+        legalArticles = await legalService.getSourcesForScenarios(scenarios, userId);
+      }
+    } else {
+      legalArticles = await legalService.getSourcesForScenarios(scenarios, userId);
+    }
   } catch (err) {
-    // Non-fatal: keep rule engine results if knowledge base lookup fails.
-    console.warn('[contractService] legal knowledge base lookup failed:', err.message);
+    logger.warn('[contractService] legal lookup failed:', err.message);
   }
 
   const summary = {

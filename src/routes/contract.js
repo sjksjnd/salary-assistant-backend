@@ -31,7 +31,7 @@ router.post('/analyze', authenticate, rateLimiters.contract, async (req, res) =>
       return res.status(400).json(error(40001, '请提供合同文本'));
     }
 
-    const analysis = await contractService.analyzeContract(text);
+    const analysis = await contractService.analyzeContract(text, req.userId);
 
     await contractService.saveDetectionRecord(
       req.userId,

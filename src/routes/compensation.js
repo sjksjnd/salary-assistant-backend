@@ -21,7 +21,7 @@ router.post('/calculate', authenticate, rateLimiters.calc, async (req, res) => {
       return res.status(400).json(error(40001, '请提供答案'));
     }
 
-    const result = await compensationService.calculateCompensation(answers);
+    const result = await compensationService.calculateCompensation(answers, req.userId);
     await compensationService.saveCompensationRecord(req.userId, answers, result);
 
     res.json(success(result));

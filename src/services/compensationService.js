@@ -1,6 +1,14 @@
 const { queryInsert } = require('../config/database');
 const calcService = require('./calcService');
 const legalService = require('./legalService');
+const pkulawService = require('./pkulawService');
+const logger = require('../utils/logger');
+
+const SCENARIO_KEYWORDS = {
+  severance_pay: '经济补偿 劳动合同法第47条',
+  unlawful_termination: '违法解除 赔偿金 劳动合同法第87条',
+  no_written_contract: '未签订劳动合同 双倍工资 劳动合同法第82条',
+};
 
 const QUESTIONS = [
   {
@@ -64,7 +72,7 @@ async function getQuestions() {
   return QUESTIONS;
 }
 
-async function calculateCompensation(answers) {
+async function calculateCompensation(answers, userId) {
   const { Q1, Q2, Q3, Q4, Q5 } = answers;
 
   const workYears = parseFloat(Q2) || 0;
@@ -114,11 +122,31 @@ async function calculateCompensation(answers) {
     scenarios.push('no_written_contract');
   }
 
-  // Cross-check calculation conclusions against the legal knowledge base.
   try {
-    compensation.legalArticles = await legalService.getSourcesForScenarios(scenarios);
+    if (pkulawService.isEnabled() && scenarios.length > 0) {
+      const scenarioKeywords = scenarios
+        .map(s => SCENARIO_KEYWORDS[s] || s)
+        .join(' ');
+
+      try {
+        const articles = await pkulawService.keywordSearch(scenarioKeywords, Math.min(scenarios.length * 2, 10), userId);
+        compensation.legalArticles = articles.map(article => ({
+          ...article,
+          fromPkulaw: true
+        }));
+      } catch (err) {
+        logger.warn('PKULaw search failed for compensation:', err.message);
+        compensation.legalArticles = await legalService.getSourcesForScenarios(scenarios, userId);
+      }
+
+      if (compensation.legalArticles.length === 0) {
+        compensation.legalArticles = await legalService.getSourcesForScenarios(scenarios, userId);
+      }
+    } else {
+      compensation.legalArticles = await legalService.getSourcesForScenarios(scenarios, userId);
+    }
   } catch (err) {
-    console.warn('[compensationService] legal knowledge base lookup failed:', err.message);
+    logger.warn('[compensationService] legal lookup failed:', err.message);
     compensation.legalArticles = [];
   }
 
