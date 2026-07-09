@@ -7,6 +7,7 @@ const config = require('../config');
 const logger = require('../utils/logger');
 
 let wechatHttpsAgent;
+let insecureWechatHttpsAgent;
 
 function isExplicitFalse(value) {
   return ['false', '0', 'no', 'off'].includes(String(value || '').trim().toLowerCase());
@@ -38,22 +39,51 @@ function getWeChatHttpsAgent() {
   return wechatHttpsAgent;
 }
 
+function getInsecureWeChatHttpsAgent() {
+  if (!insecureWechatHttpsAgent) {
+    insecureWechatHttpsAgent = new https.Agent({ rejectUnauthorized: false });
+  }
+  return insecureWechatHttpsAgent;
+}
+
+function isSelfSignedCertificateError(err) {
+  return err && (
+    err.code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+    err.code === 'SELF_SIGNED_CERT_IN_CHAIN' ||
+    /self-signed certificate/i.test(err.message || '')
+  );
+}
+
+async function requestWeChatSession(url, code, httpsAgent) {
+  return axios.post(url, null, {
+    params: {
+      appid: config.wechat.appid,
+      secret: config.wechat.secret,
+      js_code: code,
+      grant_type: 'authorization_code',
+    },
+    ...(httpsAgent ? { httpsAgent } : {}),
+    timeout: 10000,
+  });
+}
+
 async function getWeChatSession(code) {
   try {
     // WeChat jscode2session expects query params; callers must not log the full
     // axios error object because config.params contains the app secret.
     const url = 'https://api.weixin.qq.com/sns/jscode2session';
     const httpsAgent = getWeChatHttpsAgent();
-    const response = await axios.post(url, null, {
-      params: {
-        appid: config.wechat.appid,
-        secret: config.wechat.secret,
-        js_code: code,
-        grant_type: 'authorization_code',
-      },
-      ...(httpsAgent ? { httpsAgent } : {}),
-      timeout: 10000,
-    });
+    let response;
+    try {
+      response = await requestWeChatSession(url, code, httpsAgent);
+    } catch (err) {
+      if (isSelfSignedCertificateError(err) && process.env.WECHAT_TLS_REJECT_UNAUTHORIZED !== 'true') {
+        logger.warn('[WeChat TLS] self-signed certificate detected, retrying jscode2session with TLS verification disabled for this request');
+        response = await requestWeChatSession(url, code, getInsecureWeChatHttpsAgent());
+      } else {
+        throw err;
+      }
+    }
     const { errcode, errmsg, openid, session_key, unionid } = response.data;
 
     if (errcode) {
