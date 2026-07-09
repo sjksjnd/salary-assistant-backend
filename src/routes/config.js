@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const configService = require('../services/configService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 const { success, error } = require('../utils/response');
+const logger = require('../utils/logger');
 
 router.get('/:key', authenticate, async (req, res) => {
   try {
@@ -19,7 +20,7 @@ router.get('/:key', authenticate, async (req, res) => {
   }
 });
 
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const configs = await configService.getAllConfigs();
     res.json(success(configs));
@@ -29,7 +30,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const { key, value, description } = req.body;
     if (!key || value === undefined) {
@@ -43,7 +44,7 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
-router.delete('/:key', authenticate, async (req, res) => {
+router.delete('/:key', authenticate, requireAdmin, async (req, res) => {
   try {
     const { key } = req.params;
     const deleted = await configService.deleteConfig(key);

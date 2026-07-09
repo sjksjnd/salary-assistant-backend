@@ -141,6 +141,7 @@ router.delete('/me', authenticate, async (req, res) => {
       const token = authHeader.replace('Bearer ', '');
       await require('../middleware/auth').invalidateToken(token);
     }
+    try { await require('../config/redis').del(`session:${req.userId}`); } catch (e) {}
     
     await userService.deleteUser(req.userId);
     res.json(success(null, '账号已注销'));

@@ -18,7 +18,7 @@ router.post('/login', rateLimiters.login, async (req, res) => {
     }
 
     let openid, unionid;
-    // Dev mode login - only allowed in non-production environments
+    // Dev mode login - only allowed in non-production environments.
     if (code === 'dev' && config.isDev()) {
       openid = 'dev_openid_' + Date.now();
       unionid = null;
@@ -88,7 +88,7 @@ router.post('/login', rateLimiters.login, async (req, res) => {
       isNewUser,
     }, isNewUser ? '注册成功' : '登录成功'));
   } catch (err) {
-    logger.error('[LOGIN ERROR]', err);
+    logger.error('[LOGIN ERROR]', { message: err.message, code: err.code });
     if (err.message.includes('connect ECONNREFUSED') || err.message.includes('ETIMEDOUT')) {
       return res.status(500).json(error(50001, '服务暂时不可用，请稍后重试'));
     }
@@ -121,7 +121,7 @@ router.post('/update-profile', authenticate, async (req, res) => {
       }
     }, '更新成功'));
   } catch (err) {
-    logger.error('Update profile error:', err);
+    logger.error('Update profile error:', err.message);
     res.status(500).json(error(50001, '更新失败'));
   }
 });
@@ -152,7 +152,7 @@ router.put('/profile', authenticate, async (req, res) => {
       }
     }, '昵称更新成功'));
   } catch (err) {
-    logger.error('Update nickname error:', err);
+    logger.error('Update nickname error:', err.message);
     res.status(500).json(error(50001, '更新失败'));
   }
 });
@@ -184,7 +184,7 @@ router.post('/avatar', authenticate, async (req, res) => {
       avatarUrl: user.avatar_url
     }, '头像更新成功'));
   } catch (err) {
-    logger.error('Upload avatar error:', err);
+    logger.error('Upload avatar error:', err.message);
     res.status(500).json(error(50001, '头像上传失败'));
   }
 });
@@ -214,6 +214,12 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json(error(40101, '登录已过期'));
     }
 
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      try { await redis.del(`session:${userId}`); } catch (e) {}
+      return res.status(401).json(error(40101, '登录已失效，请重新登录'));
+    }
+
     // Ensure the refresh token matches the one stored in the user's session.
     const storedRefresh = await redis.get(`session:${userId}`);
     if (storedRefresh !== refreshToken) {
@@ -226,7 +232,7 @@ router.post('/refresh', async (req, res) => {
 
     res.json(success({ accessToken, refreshToken: newRefreshToken }, '刷新成功'));
   } catch (err) {
-    logger.error('Refresh token error:', err);
+    logger.error('Refresh token error:', err.message);
     res.status(500).json(error(50001, '刷新失败'));
   }
 });
@@ -244,7 +250,7 @@ router.post('/logout', authenticate, async (req, res) => {
     }
     res.json(success(null, '退出成功'));
   } catch (err) {
-    logger.error('Logout error:', err);
+    logger.error('Logout error:', err.message);
     res.json(success(null, '退出成功'));
   }
 });

@@ -58,6 +58,11 @@ JWT_REFRESH_EXPIRES=7d
 WX_APPID=你的小程序AppID
 WX_SECRET=你的小程序AppSecret
 
+# 管理员（用于 /api/config 全局配置写入）
+# 二选一或同时配置，多个值用英文逗号分隔
+ADMIN_USER_IDS=1
+# ADMIN_OPENIDS=openid1,openid2
+
 # Redis（可选，没有就留空）
 # REDIS_HOST=
 # REDIS_PORT=6379
@@ -68,6 +73,10 @@ RATE_LIMIT_GLOBAL=100
 RATE_LIMIT_LOGIN=5
 RATE_LIMIT_CONTRACT=5
 RATE_LIMIT_CALC=10
+
+# 反向代理信任设置
+# 默认只信任 loopback/linklocal/uniquelocal。若云托管必须按跳数识别真实 IP，可设置为 1。
+# TRUST_PROXY=1
 ```
 
 ### 4. 触发部署
@@ -128,9 +137,17 @@ wx.cloud.callContainer({
 - 确认数据库和云托管服务在同一环境
 - 确认数据库名、用户名、密码正确
 
-**健康检查失败**
-- 确认 HOST 监听地址是 `0.0.0.0`（代码已处理，生产环境自动监听 0.0.0.0）
-- 确认端口配置正确（3000）
+**微信登录失败 / SSL证书验证错误**
+- 当前代码不关闭 HTTPS 证书验证，也不支持 `WECHAT_CA_CERT_PATH` 业务环境变量。
+- Dockerfile 已安装系统 CA 根证书。若云环境存在自签名代理证书，请把 CA 加入系统信任库或使用 Node 官方 `NODE_EXTRA_CA_CERTS`。
+
+**配置系统 CA 证书**
+```dockerfile
+# 将 CA 证书添加到系统信任库
+COPY ca.pem /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+```
 
 **每次部署都重新执行迁移？**
 - 是，但迁移脚本是幂等的（CREATE TABLE IF NOT EXISTS / ON DUPLICATE KEY UPDATE），重复执行安全。

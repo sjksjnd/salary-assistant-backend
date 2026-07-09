@@ -12,9 +12,13 @@ const redis = require('./config/redis');
 
 const app = express();
 
-// Trust the first proxy hop (CloudBase Run / Nginx) so req.ip reflects the real client IP.
-// This is required for rateLimiter and access logs to work correctly behind a reverse proxy.
-app.set('trust proxy', 1);
+// Trust only local/private reverse proxies by default. This lets req.ip use
+// X-Forwarded-For behind CloudBase/Nginx while ignoring spoofed headers from
+// direct public clients. Set TRUST_PROXY=1 if your platform requires hop count.
+const trustProxy = process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal';
+if (trustProxy !== '0' && trustProxy !== 'false') {
+  app.set('trust proxy', /^\d+$/.test(trustProxy) ? parseInt(trustProxy, 10) : trustProxy);
+}
 
 app.use(morgan(config.isDev() ? 'dev' : 'combined'));
 app.use(securityMiddleware);

@@ -4,6 +4,7 @@ const legalService = require('../services/legalService');
 const { authenticate } = require('../middleware/auth');
 const { rateLimiters } = require('../middleware/rateLimiter');
 const { success, error } = require('../utils/response');
+const logger = require('../utils/logger');
 
 router.get('/articles', authenticate, async (req, res) => {
   try {

@@ -1,17 +1,12 @@
 const axios = require('axios');
-const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 const { query, queryInsert, withTransaction } = require('../config/database');
 const config = require('../config');
 
-const WECHAT_TLS_REJECT_UNAUTHORIZED = process.env.WECHAT_TLS_REJECT_UNAUTHORIZED === 'true';
-const wechatHttpsAgent = new https.Agent({
-  rejectUnauthorized: WECHAT_TLS_REJECT_UNAUTHORIZED,
-});
-
 async function getWeChatSession(code) {
   try {
-    // Use POST body to avoid leaking secret in URL query strings (logs/proxies/history).
+    // WeChat jscode2session expects query params; callers must not log the full
+    // axios error object because config.params contains the app secret.
     const url = 'https://api.weixin.qq.com/sns/jscode2session';
     const response = await axios.post(url, null, {
       params: {
@@ -20,10 +15,6 @@ async function getWeChatSession(code) {
         js_code: code,
         grant_type: 'authorization_code',
       },
-      // CloudBase outbound traffic can present a self-signed certificate on this route.
-      // Keep this scoped to WeChat login only; set WECHAT_TLS_REJECT_UNAUTHORIZED=true
-      // after the platform CA is imported into the image/runtime.
-      httpsAgent: wechatHttpsAgent,
       timeout: 10000,
     });
     const { errcode, errmsg, openid, session_key, unionid } = response.data;
