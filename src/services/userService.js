@@ -55,7 +55,7 @@ function isSelfSignedCertificateError(err) {
 }
 
 async function requestWeChatSession(url, code, httpsAgent) {
-  return axios.post(url, null, {
+  return axios.get(url, {
     params: {
       appid: config.wechat.appid,
       secret: config.wechat.secret,
@@ -64,6 +64,15 @@ async function requestWeChatSession(url, code, httpsAgent) {
     },
     ...(httpsAgent ? { httpsAgent } : {}),
     timeout: 10000,
+  });
+}
+
+function logWeChatUpstreamError(err) {
+  if (!err || !err.response) return;
+  logger.warn('[WeChat API] jscode2session upstream error', {
+    status: err.response.status,
+    statusText: err.response.statusText,
+    data: err.response.data,
   });
 }
 
@@ -92,6 +101,7 @@ async function getWeChatSession(code) {
 
     return { openid, session_key, unionid };
   } catch (err) {
+    logWeChatUpstreamError(err);
     // Preserve original error code for upstream classification (ECONNREFUSED etc.)
     const wrapped = new Error(`Failed to get WeChat session: ${err.message}`);
     if (err.code) wrapped.code = err.code;
