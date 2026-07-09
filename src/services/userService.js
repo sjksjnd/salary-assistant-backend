@@ -1,13 +1,40 @@
 const axios = require('axios');
+const fs = require('fs');
+const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 const { query, queryInsert, withTransaction } = require('../config/database');
 const config = require('../config');
+
+let wechatHttpsAgent;
+
+function getWeChatHttpsAgent() {
+  if (wechatHttpsAgent !== undefined) {
+    return wechatHttpsAgent;
+  }
+
+  const caPath = process.env.WECHAT_CA_CERT_PATH;
+  const rejectUnauthorized = process.env.WECHAT_TLS_REJECT_UNAUTHORIZED !== 'false';
+
+  if (!caPath && rejectUnauthorized) {
+    wechatHttpsAgent = null;
+    return wechatHttpsAgent;
+  }
+
+  const options = { rejectUnauthorized };
+  if (caPath) {
+    options.ca = fs.readFileSync(caPath);
+  }
+
+  wechatHttpsAgent = new https.Agent(options);
+  return wechatHttpsAgent;
+}
 
 async function getWeChatSession(code) {
   try {
     // WeChat jscode2session expects query params; callers must not log the full
     // axios error object because config.params contains the app secret.
     const url = 'https://api.weixin.qq.com/sns/jscode2session';
+    const httpsAgent = getWeChatHttpsAgent();
     const response = await axios.post(url, null, {
       params: {
         appid: config.wechat.appid,
@@ -15,6 +42,7 @@ async function getWeChatSession(code) {
         js_code: code,
         grant_type: 'authorization_code',
       },
+      ...(httpsAgent ? { httpsAgent } : {}),
       timeout: 10000,
     });
     const { errcode, errmsg, openid, session_key, unionid } = response.data;

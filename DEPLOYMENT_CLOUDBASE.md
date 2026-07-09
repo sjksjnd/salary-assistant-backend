@@ -58,6 +58,12 @@ JWT_REFRESH_EXPIRES=7d
 WX_APPID=你的小程序AppID
 WX_SECRET=你的小程序AppSecret
 
+# 微信登录出站 TLS（可选）
+# 推荐：导入云环境/代理 CA 证书
+# WECHAT_CA_CERT_PATH=/path/to/ca.pem
+# 应急：仅对微信登录接口关闭证书校验
+# WECHAT_TLS_REJECT_UNAUTHORIZED=false
+
 # 管理员（用于 /api/config 全局配置写入）
 # 二选一或同时配置，多个值用英文逗号分隔
 ADMIN_USER_IDS=1
@@ -138,8 +144,10 @@ wx.cloud.callContainer({
 - 确认数据库名、用户名、密码正确
 
 **微信登录失败 / SSL证书验证错误**
-- 当前代码不关闭 HTTPS 证书验证，也不支持 `WECHAT_CA_CERT_PATH` 业务环境变量。
-- Dockerfile 已安装系统 CA 根证书。若云环境存在自签名代理证书，请把 CA 加入系统信任库或使用 Node 官方 `NODE_EXTRA_CA_CERTS`。
+- 当前代码默认开启 HTTPS 证书验证。
+- 若云环境存在自签名代理证书，推荐配置 `WECHAT_CA_CERT_PATH=/path/to/ca.pem`，只给微信登录请求信任该 CA。
+- 也可以把 CA 加入系统信任库或使用 Node 官方 `NODE_EXTRA_CA_CERTS`。
+- 紧急恢复登录时可设置 `WECHAT_TLS_REJECT_UNAUTHORIZED=false`，它只作用于微信 `jscode2session` 请求；修复 CA 后应移除。
 
 **配置系统 CA 证书**
 ```dockerfile
