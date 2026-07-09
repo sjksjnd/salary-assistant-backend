@@ -147,7 +147,8 @@ wx.cloud.callContainer({
 - 当前代码默认开启 HTTPS 证书验证。
 - 若云环境存在自签名代理证书，推荐配置 `WECHAT_CA_CERT_PATH=/path/to/ca.pem`，只给微信登录请求信任该 CA。
 - 也可以把 CA 加入系统信任库或使用 Node 官方 `NODE_EXTRA_CA_CERTS`。
-- 紧急恢复登录时可设置 `WECHAT_TLS_REJECT_UNAUTHORIZED=false`，它只作用于微信 `jscode2session` 请求；修复 CA 后应移除。
+- 紧急恢复登录时可设置 `WECHAT_TLS_REJECT_UNAUTHORIZED=false`，它只作用于微信 `jscode2session` 请求；修复 CA 后应移除。可识别的关闭值包括 `false`、`0`、`no`、`off`。
+- 启动后首次微信登录会打印 `[WeChat TLS] outbound TLS config`，可用来确认线上是否读到了 CA/关闭校验配置；日志不会包含 AppSecret。
 
 **配置系统 CA 证书**
 ```dockerfile

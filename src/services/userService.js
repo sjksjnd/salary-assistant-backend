@@ -4,8 +4,13 @@ const https = require('https');
 const { v4: uuidv4 } = require('uuid');
 const { query, queryInsert, withTransaction } = require('../config/database');
 const config = require('../config');
+const logger = require('../utils/logger');
 
 let wechatHttpsAgent;
+
+function isExplicitFalse(value) {
+  return ['false', '0', 'no', 'off'].includes(String(value || '').trim().toLowerCase());
+}
 
 function getWeChatHttpsAgent() {
   if (wechatHttpsAgent !== undefined) {
@@ -13,7 +18,11 @@ function getWeChatHttpsAgent() {
   }
 
   const caPath = process.env.WECHAT_CA_CERT_PATH;
-  const rejectUnauthorized = process.env.WECHAT_TLS_REJECT_UNAUTHORIZED !== 'false';
+  const rejectUnauthorized = !isExplicitFalse(process.env.WECHAT_TLS_REJECT_UNAUTHORIZED);
+  logger.info('[WeChat TLS] outbound TLS config', {
+    hasCustomCA: !!caPath,
+    rejectUnauthorized,
+  });
 
   if (!caPath && rejectUnauthorized) {
     wechatHttpsAgent = null;
