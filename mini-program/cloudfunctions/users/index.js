@@ -18,6 +18,7 @@ exports.main = async (event, context) => {
   const action = event.action || 'profile';
 
   try {
+    if (!openid) return fail(40101, '请先登录');
     const user = await repo.findUserByOpenid(openid);
     if (!user) return fail(40101, '用户不存在');
     const userId = user._id;
