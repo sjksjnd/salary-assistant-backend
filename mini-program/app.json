@@ -1,0 +1,55 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/workhours/workhours",
+    "pages/salary/salary",
+    "pages/profile/profile",
+    "pages/records/records",
+    "pages/compensation/compensation",
+    "pages/dispute/dispute",
+    "pages/contract/contract",
+    "pages/login/login"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#2864AC",
+    "navigationBarTitleText": "工友守护·薪工记",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F5F5F5"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#2864AC",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "images/tabbar/home.png",
+        "selectedIconPath": "images/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/workhours/workhours",
+        "text": "记工时",
+        "iconPath": "images/tabbar/workhours.png",
+        "selectedIconPath": "images/tabbar/workhours-active.png"
+      },
+      {
+        "pagePath": "pages/salary/salary",
+        "text": "工资核对",
+        "iconPath": "images/tabbar/salary.png",
+        "selectedIconPath": "images/tabbar/salary-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tabbar/profile.png",
+        "selectedIconPath": "images/tabbar/profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

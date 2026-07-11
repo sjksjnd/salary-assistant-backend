@@ -1,0 +1,247 @@
+<view class="page {{fontScaleClass}}">
+  <view class="container">
+    <!-- 月份切换器 -->
+    <view class="card month-bar flex-between">
+      <view class="arrow-btn" bindtap="prevMonth">
+        <text class="arrow">＜</text>
+      </view>
+      <text class="title month-label">{{currentMonthLabel}}</text>
+      <view class="arrow-btn" bindtap="nextMonth">
+        <text class="arrow">＞</text>
+      </view>
+    </view>
+
+    <!-- 视图切换 -->
+    <view class="card view-switcher">
+      <view
+        class="view-tab {{viewMode === 'calendar' ? 'active' : ''}}"
+        data-mode="calendar"
+        bindtap="switchView"
+      >日历视图</view>
+      <view
+        class="view-tab {{viewMode === 'list' ? 'active' : ''}}"
+        data-mode="list"
+        bindtap="switchView"
+      >列表视图</view>
+    </view>
+
+    <!-- 日历视图 -->
+    <view class="card calendar-card" wx:if="{{viewMode === 'calendar'}}">
+      <!-- 星期表头 -->
+      <view class="calendar-header">
+        <view class="calendar-weekday weekend">日</view>
+        <view class="calendar-weekday">一</view>
+        <view class="calendar-weekday">二</view>
+        <view class="calendar-weekday">三</view>
+        <view class="calendar-weekday">四</view>
+        <view class="calendar-weekday">五</view>
+        <view class="calendar-weekday weekend">六</view>
+      </view>
+      <!-- 日历网格 -->
+      <view class="calendar-grid">
+        <block wx:for="{{calendarDays}}" wx:key="index">
+          <view wx:if="{{item.empty}}" class="calendar-cell empty"></view>
+          <view
+            wx:else
+            class="calendar-cell {{item.isWeekend ? 'weekend' : ''}} {{item.isHoliday ? 'holiday' : ''}} {{item.isToday ? 'today' : ''}} {{item.hasRecord ? 'has-record' : ''}} {{item.isOvertime ? 'overtime' : ''}}"
+            data-date="{{item.date}}"
+            data-has-record="{{item.hasRecord}}"
+            bindtap="onDayTap"
+          >
+            <text class="cell-day">{{item.day}}</text>
+            <text wx:if="{{item.hasRecord}}" class="cell-hours">{{item.hours}}h</text>
+            <text wx:if="{{item.hasRecord}}" class="cell-wage">¥{{item.wage}}</text>
+            <text wx:if="{{item.isOvertime}}" class="cell-overtime-tag">加班</text>
+          </view>
+        </block>
+      </view>
+      <!-- 图例 -->
+      <view class="calendar-legend">
+        <view class="legend-item"><view class="legend-box today-box"></view><text>今天</text></view>
+        <view class="legend-item"><view class="legend-box record-box"></view><text>已记录</text></view>
+        <view class="legend-item"><view class="legend-box overtime-box"></view><text>加班</text></view>
+        <view class="legend-item"><view class="legend-box weekend-box"></view><text>周末</text></view>
+      </view>
+    </view>
+
+    <!-- 本月工时统计 -->
+    <view class="card stats-card">
+      <view class="stats-row flex-between">
+        <view class="stat-item flex-col flex-center">
+          <text class="stat-num">{{stats.days}}</text>
+          <text class="stat-label">总天数</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item flex-col flex-center">
+          <text class="stat-num">{{stats.hours}}</text>
+          <text class="stat-label">总工时(h)</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item flex-col flex-center">
+          <text class="stat-num wage-num">¥{{stats.wage}}</text>
+          <text class="stat-label">普通工资</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card wage-model-card">
+      <view class="flex-between">
+        <text class="title">工资参考</text>
+      </view>
+
+      <view class="wage-layer mt-16">
+        <view class="wage-layer-item">
+          <text class="wage-layer-label">普通时薪工资</text>
+          <text class="wage-layer-value">¥{{wageModel.actualWage}}</text>
+        </view>
+      </view>
+
+      <view class="wage-divider"></view>
+
+      <view class="wage-layer">
+        <view class="wage-layer-item">
+          <text class="wage-layer-label">参考应得</text>
+          <text class="wage-layer-value primary">¥{{wageModel.statutoryWage}}</text>
+        </view>
+      </view>
+
+      <view class="wage-hint mt-16">
+        <text>普通工资按工时 × 时薪计算；参考应得按工作日、周末和节假日倍率估算。差额在下方单独展示。</text>
+      </view>
+      <view class="formula-box mt-12">
+        <text class="formula-main">{{wageModel.formula}}</text>
+        <text class="formula-sub mt-6">{{wageModel.overtimeNote}}</text>
+      </view>
+    </view>
+
+    <!-- 加班统计 -->
+    <view class="card stats-card" wx:if="{{stats.overtimeHours != '0'}}">
+      <view class="stats-row flex-between">
+        <view class="stat-item flex-col flex-center">
+          <text class="stat-num warning">{{stats.overtimeHours}}</text>
+          <text class="stat-label">加班时长(h)</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item flex-col flex-center">
+          <text class="stat-num warning">¥{{stats.overtimePremium}}</text>
+          <text class="stat-label">参考差额</text>
+        </view>
+      </view>
+      <view class="stats-tip mt-16">{{wageModel.formula}}。参考差额是加班倍率带来的增量，不是最终实发结论。</view>
+    </view>
+
+    <!-- 记录列表（列表视图） -->
+    <view class="list" wx:if="{{viewMode === 'list'}}">
+      <block wx:if="{{records.length > 0}}">
+        <view
+          class="card record-item"
+          wx:for="{{records}}"
+          wx:key="date"
+          data-date="{{item.date}}"
+          bindtap="onRecordTap"
+          hover-class="card-hover"
+          hover-stay-time="100"
+        >
+          <view class="flex-between">
+            <view class="flex-col record-left">
+              <text class="record-date">{{item.displayDate}}</text>
+              <view class="mt-8">
+                <text class="tag tag-info">{{item.shiftLabel}}</text>
+                <text class="record-hours">{{item.hours}}小时</text>
+              </view>
+            </view>
+            <view class="flex-col flex-center record-right">
+              <text class="record-wage">¥{{item.wage}}</text>
+              <text class="record-action">编辑</text>
+            </view>
+          </view>
+        </view>
+      </block>
+      <view class="card empty-state flex-col flex-center" wx:elif="{{!loading}}">
+        <text class="empty-icon">📋</text>
+        <text class="hint mt-16">暂无记录，点击下方按钮添加</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部固定添加按钮 -->
+  <view class="bottom-bar">
+    <view class="btn-primary add-btn" bindtap="openAddModal">添加工时记录</view>
+  </view>
+
+  <!-- 添加/编辑记录弹窗 -->
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeAddModal">
+    <view class="modal" catchtap="noop">
+      <view class="modal-header flex-between">
+        <text class="title">{{modalMode === 'edit' ? '编辑工时记录' : '添加工时记录'}}</text>
+        <text class="close-btn" bindtap="closeAddModal">✕</text>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">日期</text>
+        <picker wx:if="{{modalMode !== 'edit'}}" mode="date" value="{{form.date}}" bindchange="onDateChange">
+          <view class="input picker-display">
+            <text class="{{form.date ? '' : 'placeholder'}}">{{form.date || '请选择日期'}}</text>
+            <text class="picker-arrow">▾</text>
+          </view>
+        </picker>
+        <view wx:else class="input readonly-display">
+          <text>{{form.date}}</text>
+          <text class="readonly-hint">如需改日期，可删除后重新添加</text>
+        </view>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">工时（小时，0.5-24，支持半小时）</text>
+        <input
+          class="input"
+          type="digit"
+          value="{{form.hours}}"
+          placeholder="如：8、8.5、10.5"
+          maxlength="5"
+          bindinput="onHoursInput"
+        />
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">班次</text>
+        <view class="shift-options">
+          <view
+            class="shift-option {{form.shift === item.value ? 'active' : ''}}"
+            wx:for="{{shiftOptions}}"
+            wx:key="value"
+            data-shift="{{item.value}}"
+            bindtap="onShiftSelect"
+          >{{item.icon}} {{item.label}}</view>
+        </view>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">时薪（元，1-500）</text>
+        <input
+          class="input"
+          type="digit"
+          value="{{form.rate}}"
+          placeholder="请输入时薪"
+          maxlength="6"
+          bindinput="onRateInput"
+        />
+      </view>
+
+      <button
+        class="btn-primary submit-btn mt-16"
+        bindtap="submitRecord"
+        loading="{{submitting}}"
+        disabled="{{submitting}}"
+      >{{modalMode === 'edit' ? '保存修改' : '保存'}}</button>
+
+      <button
+        wx:if="{{modalMode === 'edit'}}"
+        class="delete-btn mt-16"
+        bindtap="deleteRecord"
+        loading="{{deleting}}"
+        disabled="{{submitting || deleting}}"
+      >删除这条记录</button>
+    </view>
+  </view>
+</view>

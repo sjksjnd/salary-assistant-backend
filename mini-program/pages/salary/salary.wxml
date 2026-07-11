@@ -1,0 +1,316 @@
+<view class="container salary-page {{fontScaleClass}}">
+  <view class="card month-switcher flex-between">
+    <view class="month-arrow" bindtap="prevMonth">＜</view>
+    <view class="title">{{monthLabel}}</view>
+    <view class="month-arrow" bindtap="nextMonth">＞</view>
+  </view>
+
+  <view class="card salary-check-card">
+    <view class="flex-between">
+      <view>
+        <view class="hint">工资核对</view>
+        <view class="check-title mt-8">{{salaryStatus.label}}</view>
+      </view>
+      <view class="status-pill {{salaryStatus.tone}}">{{actualSalary > 0 ? '已录到账' : '待录入'}}</view>
+    </view>
+
+    <view class="salary-main mt-20">
+      <view class="salary-main-item">
+        <text class="salary-label">参考应得</text>
+        <text class="salary-value primary">¥{{display.referenceSalary}}</text>
+      </view>
+      <view class="salary-main-item">
+        <text class="salary-label">实际到账</text>
+        <text class="salary-value success">¥{{display.actualSalary}}</text>
+      </view>
+    </view>
+
+    <view class="gap-card mt-16 {{salaryGap > 0 ? 'warning' : 'success'}}">
+      <text class="gap-label">参考差额</text>
+      <text class="gap-value">¥{{display.salaryGap}}</text>
+    </view>
+
+    <view class="insight-card mt-16 {{salaryInsight.tone}}">
+      <text class="insight-title">{{salaryInsight.title}}</text>
+      <text class="insight-desc mt-8">{{salaryInsight.desc}}</text>
+    </view>
+
+    <view class="work-summary mt-16">
+      <view class="work-metric">
+        <text class="metric-num">{{workSummary.days}}</text>
+        <text class="metric-label">记工天数</text>
+      </view>
+      <view class="work-metric">
+        <text class="metric-num">{{workSummary.hours}}</text>
+        <text class="metric-label">总工时(h)</text>
+      </view>
+      <view class="work-metric">
+        <text class="metric-num">{{workSummary.overtimeHours}}</text>
+        <text class="metric-label">加班时长(h)</text>
+      </view>
+    </view>
+
+    <view class="check-hint mt-16">
+      <text>参考应得来自记工时记录；录入实际到账后，可快速核对是否需要查看工资条、考勤和扣款记录。</text>
+    </view>
+  </view>
+
+  <view class="data-warning" wx:if="{{loadWarning}}">
+    <text>{{loadWarning}}</text>
+  </view>
+
+  <view class="card overview-card">
+    <view class="overview-row flex-between">
+      <view class="overview-item">
+        <view class="hint">已记扣款</view>
+        <view class="overview-amount danger">¥{{display.totalDeduction}}</view>
+      </view>
+      <view class="overview-item">
+        <view class="hint">本月花销</view>
+        <view class="overview-amount warning">¥{{display.totalExpense}}</view>
+      </view>
+      <view class="overview-item">
+        <view class="hint">本月预支</view>
+        <view class="overview-amount">¥{{display.totalAdvance}}</view>
+      </view>
+    </view>
+
+    <view class="remaining-row flex-between mt-16">
+      <view>
+        <view class="subtitle">到账后结余</view>
+        <view class="hint mt-8">按实际到账减花销和预支估算</view>
+      </view>
+      <view class="remaining-amount {{remaining >= 0 ? 'success' : 'danger'}}">¥{{display.remaining}}</view>
+    </view>
+  </view>
+
+  <view class="action-grid">
+    <view class="action-item" bindtap="openActualSalaryModal">
+      <view class="action-icon">到</view>
+      <view class="action-label">录到账</view>
+    </view>
+    <view class="action-item" bindtap="openDeductionModal">
+      <view class="action-icon">扣</view>
+      <view class="action-label">记扣款</view>
+    </view>
+    <view class="action-item" bindtap="openExpenseModal">
+      <view class="action-icon">花</view>
+      <view class="action-label">记花销</view>
+    </view>
+    <view class="action-item" bindtap="openAdvanceModal">
+      <view class="action-icon">预</view>
+      <view class="action-label">记预支</view>
+    </view>
+    <view class="action-item" bindtap="goBills">
+      <view class="action-icon">账</view>
+      <view class="action-label">月度账单</view>
+    </view>
+    <view class="action-item" bindtap="shareBill">
+      <view class="action-icon">图</view>
+      <view class="action-label">分享账单</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{expenseStats.length > 0}}">
+    <view class="title mb-8">花销分类</view>
+    <view class="stat-row" wx:for="{{expenseStats}}" wx:key="value">
+      <view class="stat-left">
+        <text class="stat-icon">{{item.icon}}</text>
+        <text class="stat-label">{{item.label}}</text>
+      </view>
+      <view class="stat-bar-wrap flex-1">
+        <view class="stat-bar expense-bar" style="width: {{item.percent}}%"></view>
+      </view>
+      <view class="stat-right">
+        <text class="stat-amount">¥{{item.amountText}}</text>
+        <text class="stat-percent hint">{{item.percent}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{deductionStats.length > 0}}">
+    <view class="title mb-8">扣款分类</view>
+    <view class="stat-row" wx:for="{{deductionStats}}" wx:key="value">
+      <view class="stat-left">
+        <text class="stat-icon">{{item.icon}}</text>
+        <text class="stat-label">{{item.label}}</text>
+      </view>
+      <view class="stat-bar-wrap flex-1">
+        <view class="stat-bar deduction-bar" style="width: {{item.percent}}%"></view>
+      </view>
+      <view class="stat-right">
+        <text class="stat-amount">¥{{item.amountText}}</text>
+        <text class="stat-percent hint">{{item.percent}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card empty-state" wx:if="{{!loading && referenceSalary === 0 && actualSalary === 0 && totalDeduction === 0 && totalExpense === 0 && totalAdvance === 0}}">
+    <view class="hint">本月还没有数据</view>
+    <view class="hint mt-8">先记工时，月底再录入实际到账工资。</view>
+  </view>
+
+  <view class="card empty-state" wx:if="{{loading}}">
+    <view class="hint">加载中...</view>
+  </view>
+</view>
+
+<view class="modal-mask" wx:if="{{actualSalaryModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view>
+        <view class="title">录入实际到账工资</view>
+        <view class="hint mt-8">填写银行卡或微信实际收到的工资金额</view>
+      </view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">到账金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入实际到账金额" value="{{actualSalaryForm.amount}}" bindinput="onActualSalaryField" />
+      <view class="check-hint mt-16">保存后会和本月记工时生成的参考应得做核对。</view>
+      <button class="btn-primary mt-16" bindtap="submitActualSalary" loading="{{submitting}}">保存到账工资</button>
+    </view>
+  </view>
+</view>
+
+<view class="modal-mask" wx:if="{{billModal}}" bindtap="closeBillModal">
+  <view class="modal-content bill-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view>
+        <view class="title">月度账单</view>
+        <view class="hint mt-8">{{monthLabel}}</view>
+      </view>
+      <view class="modal-close" bindtap="closeBillModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="bill-hero">
+        <view>
+          <view class="hint">参考差额</view>
+          <view class="bill-remaining {{billSummary.salaryGap > 0 ? 'warning' : 'success'}}">¥{{billSummary.salaryGapText}}</view>
+        </view>
+        <view class="bill-pill {{billSummary.salaryGap > 0 ? 'negative' : 'positive'}}">
+          {{billSummary.salaryGap > 0 ? '建议核对' : '核对正常'}}
+        </view>
+      </view>
+
+      <view class="insight-card mt-16 {{billSummary.insight.tone}}">
+        <text class="insight-title">{{billSummary.insight.title}}</text>
+        <text class="insight-desc mt-8">{{billSummary.insight.desc}}</text>
+      </view>
+
+      <view class="bill-bars mt-16">
+        <view class="bill-bar-row" wx:for="{{billSections}}" wx:key="key">
+          <view class="bill-bar-head flex-between">
+            <text class="subtitle">{{item.label}}</text>
+            <text class="bill-amount">¥{{item.amountText}}</text>
+          </view>
+          <view class="bill-bar-track">
+            <view class="bill-bar-fill {{item.tone}}" style="width: {{item.percent}}%"></view>
+          </view>
+        </view>
+      </view>
+
+      <view class="bill-grid mt-16">
+        <view class="bill-metric">
+          <text class="hint">参考应得</text>
+          <text class="metric-value">¥{{billSummary.referenceSalaryText}}</text>
+        </view>
+        <view class="bill-metric">
+          <text class="hint">实际到账</text>
+          <text class="metric-value success">¥{{billSummary.actualSalaryText}}</text>
+        </view>
+      </view>
+
+      <button class="btn-primary mt-16" bindtap="shareBill">生成分享图片</button>
+    </view>
+  </view>
+</view>
+
+<view class="modal-mask" wx:if="{{deductionModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">记扣款</view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">分类</view>
+      <view class="category-grid">
+        <view class="category-item {{deductionForm.category === item.value ? 'active' : ''}}" wx:for="{{deductionCategories}}" wx:key="value" data-value="{{item.value}}" bindtap="pickDeductionCategory">
+          <text class="cat-icon">{{item.icon}}</text>
+          <text class="cat-label">{{item.label}}</text>
+        </view>
+      </view>
+      <view class="form-label mt-16">金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入金额" value="{{deductionForm.amount}}" data-field="amount" bindinput="onDeductionField" />
+      <view class="form-label mt-16">日期</view>
+      <picker mode="date" value="{{deductionForm.date}}" data-field="date" bindchange="onDeductionField">
+        <view class="input picker-display">{{deductionForm.date || '请选择日期'}}</view>
+      </picker>
+      <view class="form-label mt-16">备注</view>
+      <input class="input" placeholder="选填" value="{{deductionForm.note}}" data-field="note" bindinput="onDeductionField" />
+      <button class="btn-primary mt-16" bindtap="submitDeduction" loading="{{submitting}}">保存扣款</button>
+    </view>
+  </view>
+</view>
+
+<view class="modal-mask" wx:if="{{expenseModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">记花销</view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">分类</view>
+      <view class="category-grid">
+        <view class="category-item {{expenseForm.category === item.value ? 'active' : ''}}" wx:for="{{expenseCategories}}" wx:key="value" data-value="{{item.value}}" bindtap="pickExpenseCategory">
+          <text class="cat-icon">{{item.icon}}</text>
+          <text class="cat-label">{{item.label}}</text>
+        </view>
+      </view>
+      <view class="form-label mt-16">金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入金额" value="{{expenseForm.amount}}" data-field="amount" bindinput="onExpenseField" />
+      <view class="form-label mt-16">日期</view>
+      <picker mode="date" value="{{expenseForm.date}}" data-field="date" bindchange="onExpenseField">
+        <view class="input picker-display">{{expenseForm.date || '请选择日期'}}</view>
+      </picker>
+      <view class="form-label mt-16">备注</view>
+      <input class="input" placeholder="选填" value="{{expenseForm.note}}" data-field="note" bindinput="onExpenseField" />
+      <button class="btn-primary mt-16" bindtap="submitExpense" loading="{{submitting}}">保存花销</button>
+    </view>
+  </view>
+</view>
+
+<view class="modal-mask" wx:if="{{advanceModal}}" bindtap="closeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">记预支</view>
+      <view class="modal-close" bindtap="closeModal">×</view>
+    </view>
+    <view class="modal-body">
+      <view class="form-label">金额（元）</view>
+      <input class="input" type="digit" placeholder="请输入金额" value="{{advanceForm.amount}}" data-field="amount" bindinput="onAdvanceField" />
+      <view class="form-label mt-16">用途</view>
+      <input class="input" placeholder="请填写预支用途" value="{{advanceForm.purpose}}" data-field="purpose" bindinput="onAdvanceField" />
+      <view class="form-label mt-16">日期</view>
+      <picker mode="date" value="{{advanceForm.date}}" data-field="date" bindchange="onAdvanceField">
+        <view class="input picker-display">{{advanceForm.date || '请选择日期'}}</view>
+      </picker>
+      <button class="btn-primary mt-16" bindtap="submitAdvance" loading="{{submitting}}">保存预支</button>
+    </view>
+  </view>
+</view>
+
+<canvas canvas-id="billCanvas" style="width: 600px; height: 800px; position: fixed; left: -9999px;"></canvas>
+
+<view class="modal-mask" wx:if="{{shareModal}}" bindtap="closeShareModal">
+  <view class="modal-content share-content" catchtap="">
+    <view class="modal-header flex-between">
+      <view class="title">账单分享</view>
+      <view class="modal-close" bindtap="closeShareModal">×</view>
+    </view>
+    <view class="modal-body">
+      <image wx:if="{{shareImage}}" src="{{shareImage}}" mode="widthFix" class="share-image" />
+      <view class="share-hint mt-16">长按图片保存或分享给好友</view>
+    </view>
+  </view>
+</view>

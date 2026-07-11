@@ -1,0 +1,119 @@
+<view class="container {{fontScaleClass}}">
+  <view class="card intro-card">
+    <text class="title">合同条款自查</text>
+    <text class="subtitle mt-8">粘贴劳动合同内容，快速查看试用期、扣款、加班约定等需核对事项。</text>
+  </view>
+
+  <view class="card history-entry" bindtap="viewHistory">
+    <view class="flex-between">
+      <text class="subtitle">我的自查记录</text>
+      <text class="history-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 文本输入区 -->
+  <view class="card">
+    <view class="flex-between">
+      <text class="title">合同文本</text>
+      <text class="hint">{{textLength}} 字</text>
+    </view>
+    <textarea class="textarea mt-16" placeholder="请粘贴或输入合同内容（至少100字）" value="{{text}}" bindinput="onTextInput" maxlength="-1" />
+    <text class="hint mt-8" wx:if="{{textLength < 100}}">还需输入 {{100 - textLength}} 字</text>
+    <view class="flex mt-16">
+      <button class="btn-outline flex-1" bindtap="pasteContract">粘贴文本</button>
+      <view class="action-gap"></view>
+      <button class="btn-outline flex-1" bindtap="loadSample">填入样例</button>
+    </view>
+  </view>
+
+  <!-- 开始自查按钮 -->
+  <button class="btn-primary analyze-btn mt-16" bindtap="startAnalyze" disabled="{{!canAnalyze}}" loading="{{loading}}">
+    {{loading ? '自查中...' : '开始自查'}}
+  </button>
+
+  <!-- 自查中 loading -->
+  <view class="card loading-card" wx:if="{{loading}}">
+    <view class="loading-head">
+      <view class="loading-spinner"></view>
+      <view class="loading-copy">
+        <text class="title">正在自查合同</text>
+        <text class="hint mt-8">{{analyzeStageDesc}}</text>
+      </view>
+    </view>
+    <view class="analyze-progress mt-16">
+      <view class="analyze-progress-fill" style="width: {{analyzeProgress}}%"></view>
+    </view>
+    <view class="analyze-steps mt-16">
+      <view class="analyze-step {{item.active ? 'active' : ''}}" wx:for="{{analyzeSteps}}" wx:key="title">
+        <view class="step-dot">{{index + 1}}</view>
+        <view class="step-text">{{item.title}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 自查结果 -->
+  <block wx:if="{{result && !loading}}">
+    <!-- 摘要卡片 -->
+    <view id="contractResult" class="card summary-card">
+      <view class="complete-badge">自查完成</view>
+      <text class="title">合同条款自查报告</text>
+      <view class="mt-16">
+        <text class="summary-text">共发现 </text>
+        <text class="summary-total">{{result.summary.total || 0}}</text>
+        <text class="summary-text"> 处待核对内容</text>
+      </view>
+      <view class="summary-tags mt-16">
+        <text class="tag tag-critical" wx:if="{{result.summary.critical}}">重点 {{result.summary.critical}}</text>
+        <text class="tag tag-high" wx:if="{{result.summary.high}}">较高 {{result.summary.high}}</text>
+        <text class="tag tag-medium" wx:if="{{result.summary.medium}}">一般 {{result.summary.medium}}</text>
+      </view>
+    </view>
+
+    <!-- 问题列表 -->
+    <view class="card" wx:if="{{result.issues && result.issues.length}}">
+      <text class="title">需核对事项</text>
+      <view class="issue-item mt-16" wx:for="{{result.issues}}" wx:key="index">
+        <view class="flex-between">
+          <text class="tag tag-{{item.severity}}">
+            {{item.severity === 'critical' ? '重点' : item.severity === 'high' ? '较高' : '一般'}}
+          </text>
+          <text class="issue-type">{{item.type}}</text>
+        </view>
+        <view class="mt-8" wx:if="{{item.law}}">
+          <text class="issue-law">相关规则：{{item.law}}</text>
+          <text class="issue-law-text hint mt-8">{{item.lawText}}</text>
+        </view>
+        <view class="issue-suggestion mt-8">
+            <text class="subtitle">核对提示</text>
+          <text class="hint mt-8">{{item.suggestion}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card" wx:if="{{result.legalArticles && result.legalArticles.length}}">
+      <text class="title">相关规则</text>
+      <view class="mt-16" wx:for="{{result.legalArticles}}" wx:key="source">
+        <view class="law-item">
+          <text class="law-source">{{item.pkulawUrl ? '已匹配原文链接' : '公开规则信息'}}</text>
+          <text class="law-meta" wx:if="{{item.source}}">{{item.source}}</text>
+          <text class="law-title subtitle mt-8" wx:if="{{item.title}}">{{item.title}}</text>
+          <text class="law-text hint mt-8">{{item.originalText}}</text>
+          <button class="law-link-btn" wx:if="{{item.pkulawUrl}}" data-url="{{item.pkulawUrl}}" catchtap="copyLawLink">复制原文链接</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="card negotiate-card">
+      <text class="title">可准备的材料</text>
+      <text class="subtitle mt-8">可先保存合同原件、工资记录、考勤记录和沟通记录。本工具只做信息自查，不替代律师或主管部门意见。</text>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="flex action-bar mt-16">
+      <button class="btn-outline flex-1" bindtap="copyCheckList">复制核对清单</button>
+      <view class="action-gap"></view>
+      <button class="btn-primary flex-1" bindtap="reset">重新自查</button>
+    </view>
+    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">保存到我的记录</button>
+  </block>
+</view>

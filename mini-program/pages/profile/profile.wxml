@@ -1,0 +1,117 @@
+<!-- pages/profile/profile.wxml -->
+<view class="page {{fontScaleClass}}">
+
+  <!-- 顶部用户卡片（未登录跳转登录，已登录弹出编辑选项） -->
+  <view class="user-card" bindtap="onUserCardTap">
+    <view class="avatar">
+      <image wx:if="{{userInfo.avatarUrl}}" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
+      <text wx:else class="avatar-placeholder">👤</text>
+    </view>
+    <view class="user-info">
+      <view class="username">
+        {{isLoggedIn ? (userInfo.nickname || '工友用户') : '点击登录'}}
+      </view>
+      <view class="user-meta" wx:if="{{isLoggedIn}}">
+        <text class="tag tag-info">资料已同步</text>
+      </view>
+      <view class="user-meta hint" wx:else>登录后享受更多服务</view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="menu-group">
+    <view class="menu-cell" bindtap="goContractRecords">
+      <text class="menu-icon">📋</text>
+      <text class="menu-label">我的记录</text>
+      <text class="arrow">›</text>
+    </view>
+    <view class="menu-cell" bindtap="goSalaryRecords">
+      <text class="menu-icon">💰</text>
+      <text class="menu-label">工资核对</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 设置 -->
+  <view class="menu-group">
+    <view class="menu-cell" bindtap="toggleSettings">
+      <text class="menu-icon">⚙️</text>
+      <text class="menu-label">设置</text>
+      <text class="arrow {{settingsExpanded ? 'expanded' : ''}}">›</text>
+    </view>
+
+    <!-- 设置子项 -->
+    <view class="settings-panel" wx:if="{{settingsExpanded}}">
+      <!-- 字体大小 -->
+      <view class="setting-row">
+        <text class="setting-label">字体大小</text>
+        <view class="option-group">
+          <view class="option-btn {{fontScale === 'small' ? 'active' : ''}}"
+                bindtap="onFontScaleChange" data-scale="small">小</view>
+          <view class="option-btn {{fontScale === 'medium' ? 'active' : ''}}"
+                bindtap="onFontScaleChange" data-scale="medium">中</view>
+          <view class="option-btn {{fontScale === 'large' ? 'active' : ''}}"
+                bindtap="onFontScaleChange" data-scale="large">大</view>
+          <view class="option-btn {{fontScale === 'extra-large' ? 'active' : ''}}"
+                bindtap="onFontScaleChange" data-scale="extra-large">超大</view>
+        </view>
+      </view>
+
+      <!-- 默认班次 -->
+      <view class="setting-row">
+        <text class="setting-label">默认班次</text>
+        <view class="option-group">
+          <view class="option-btn {{defaultShift === 'morning' ? 'active' : ''}}"
+                bindtap="onShiftChange" data-shift="morning">早班</view>
+          <view class="option-btn {{defaultShift === 'midday' ? 'active' : ''}}"
+                bindtap="onShiftChange" data-shift="midday">中班</view>
+          <view class="option-btn {{defaultShift === 'night' ? 'active' : ''}}"
+                bindtap="onShiftChange" data-shift="night">夜班</view>
+        </view>
+      </view>
+
+      <!-- 提醒开关 -->
+      <view class="setting-row">
+        <text class="setting-label">提醒</text>
+        <switch checked="{{notifyEnabled}}" bindchange="onNotifyChange" color="#2864AC" />
+      </view>
+
+      <!-- 提醒时间（开启提醒后显示） -->
+      <view class="setting-row" wx:if="{{notifyEnabled}}">
+        <text class="setting-label">提醒时间</text>
+        <picker mode="time" value="{{notifyTime}}" bindchange="onNotifyTimeChange">
+          <view class="picker-value">{{notifyTime}}</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <!-- 数据管理 -->
+  <view class="menu-group">
+    <view class="menu-cell" bindtap="backupData">
+      <text class="menu-icon">📤</text>
+      <text class="menu-label">导出本地数据</text>
+      <text class="arrow">›</text>
+    </view>
+    <view class="menu-cell" bindtap="clearData">
+      <text class="menu-icon">🗑️</text>
+      <text class="menu-label danger">清除本地数据</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 关于 + 退出登录 -->
+  <view class="menu-group">
+    <view class="menu-cell" bindtap="showAbout">
+      <text class="menu-icon">ℹ️</text>
+      <text class="menu-label">关于</text>
+      <text class="arrow">›</text>
+    </view>
+    <view class="menu-cell" wx:if="{{isLoggedIn}}" bindtap="doLogout">
+      <text class="menu-icon">🚪</text>
+      <text class="menu-label danger">退出登录</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+</view>
