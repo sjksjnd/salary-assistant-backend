@@ -1,0 +1,123 @@
+<view class="container {{fontScaleClass}}">
+  <!-- 加载中 -->
+  <view class="card flex-center" wx:if="{{loading}}">
+    <text class="hint">问题加载中...</text>
+  </view>
+
+  <!-- 问答步骤 -->
+  <block wx:elif="{{!showResult}}">
+    <!-- 进度条 -->
+    <view class="card">
+      <view class="flex-between">
+        <text class="subtitle">第 {{currentIndex + 1}} 题 / 共 {{questions.length}} 题</text>
+        <text class="hint">{{progressPercent}}%</text>
+      </view>
+      <view class="progress-bar mt-8">
+        <view class="progress-fill" style="width: {{progressPercent}}%"></view>
+      </view>
+    </view>
+
+    <!-- 当前问题 -->
+    <view class="card" wx:if="{{currentQuestion}}">
+      <text class="title-lg question-text">{{currentQuestion.text}}</text>
+
+      <!-- 单选题 -->
+      <radio-group class="mt-16 radio-group" wx:if="{{currentQuestion.type === 'radio'}}" bindchange="onRadioChange" data-qid="{{currentQuestion.id}}">
+        <label class="radio-item" wx:for="{{currentQuestion.options}}" wx:key="value">
+          <radio value="{{item.value}}" checked="{{answers[currentQuestion.id] === item.value}}" color="#2864AC" />
+          <text class="radio-label">{{item.label}}</text>
+        </label>
+      </radio-group>
+
+      <!-- 数字输入题 -->
+      <view class="mt-16" wx:elif="{{currentQuestion.type === 'digit'}}">
+        <view class="digit-input-wrap">
+          <input class="input digit-input" type="digit" placeholder="{{currentQuestion.placeholder}}" value="{{answers[currentQuestion.id]}}" bindinput="onDigitInput" data-qid="{{currentQuestion.id}}" />
+          <text class="digit-unit">{{currentQuestion.unit}}</text>
+        </view>
+        <text class="hint mt-8">范围：{{currentQuestion.min}} ~ {{currentQuestion.max}} {{currentQuestion.unit}}</text>
+        <text class="danger mt-8" wx:if="{{error}}">{{error}}</text>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="flex action-bar mt-16">
+      <button class="btn-outline flex-1" bindtap="prev" disabled="{{currentIndex === 0}}">上一题</button>
+      <view class="action-gap"></view>
+      <button class="btn-primary flex-1" bindtap="next" disabled="{{!canNext}}" loading="{{submitting}}">
+        {{isLastQuestion ? '生成参考结果' : '下一题'}}
+      </button>
+    </view>
+  </block>
+
+  <!-- 结果展示 -->
+  <block wx:else>
+    <!-- 参考金额 -->
+    <view id="compensationResult" class="card result-amount-card">
+      <text class="hint">参考测算金额</text>
+      <view class="amount-wrap mt-8">
+        <text class="amount-symbol">¥</text>
+        <text class="amount-value">{{result.totalAmount || 0}}</text>
+      </view>
+      <text class="hint mt-8">本结果根据你填写的信息测算，仅供记录核对参考，不作为个案判断。</text>
+    </view>
+
+    <!-- 明细列表 -->
+    <view class="card" wx:if="{{result.items && result.items.length}}">
+      <text class="title">测算明细</text>
+      <view class="detail-item flex-between mt-16" wx:for="{{result.items}}" wx:key="name">
+        <text class="subtitle">{{item.name}}</text>
+        <text class="detail-amount">¥{{item.amount}}</text>
+      </view>
+    </view>
+
+    <!-- 相关规则 -->
+    <view class="card" wx:if="{{result.legalArticles && result.legalArticles.length}}">
+      <text class="title">相关规则</text>
+      <view class="mt-16" wx:for="{{result.legalArticles}}" wx:key="source">
+        <view class="law-item">
+          <text class="law-source">{{item.pkulawUrl ? '已匹配原文链接' : '公开规则信息'}}</text>
+          <text class="law-meta" wx:if="{{item.source}}">{{item.source}}</text>
+          <text class="law-title subtitle mt-8" wx:if="{{item.title}}">{{item.title}}</text>
+          <text class="law-text hint mt-8">{{item.originalText}}</text>
+          <button class="law-link-btn" wx:if="{{item.pkulawUrl}}" data-url="{{item.pkulawUrl}}" catchtap="copyLawLink">复制原文链接</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="card negotiate-card">
+      <text class="title">使用说明</text>
+      <text class="subtitle mt-8">请先核对劳动合同、工资流水、社保记录和离职材料。具体争议处理请咨询 12333、劳动监察、工会或持证律师。</text>
+    </view>
+
+    <!-- 证据清单 -->
+    <view class="card">
+      <text class="title">材料清单</text>
+      <view class="evidence-list mt-16">
+        <view class="evidence-item" wx:for="{{evidenceList}}" wx:key="*this">
+          <text class="evidence-dot">•</text>
+          <text class="evidence-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 处理流程 -->
+    <view class="card">
+      <text class="title">核对步骤</text>
+      <view class="process-list mt-16">
+        <view class="process-item" wx:for="{{processSteps}}" wx:key="*this">
+          <view class="process-num">{{index + 1}}</view>
+          <text class="process-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="flex action-bar mt-16">
+      <button class="btn-outline flex-1" bindtap="copySummary">复制测算摘要</button>
+      <view class="action-gap"></view>
+      <button class="btn-primary flex-1" bindtap="restart">重新测算</button>
+    </view>
+    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">保存到我的记录</button>
+  </block>
+</view>

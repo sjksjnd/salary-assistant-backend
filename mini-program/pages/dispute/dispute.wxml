@@ -1,0 +1,51 @@
+<!-- 材料整理页 -->
+<view class="container {{fontScaleClass}}">
+
+  <view class="card consult-tip">
+    <view class="tip-title">先把材料留好</view>
+    <view class="tip-desc">把工资、合同、工时和沟通记录按时间整理好，月底核对时更省心。本页只做资料整理和信息核对。</view>
+  </view>
+
+  <view class="card">
+    <view class="title mb-16">资料整理步骤</view>
+    <view class="timeline">
+      <view class="timeline-item" wx:for="{{timeline}}" wx:key="step">
+        <view class="timeline-left">
+          <view class="timeline-icon">{{item.step}}</view>
+          <view class="timeline-line" wx:if="{{item.step < 4}}"></view>
+        </view>
+        <view class="timeline-content">
+          <view class="timeline-title">
+            <text class="step-badge">第{{item.step}}步</text>
+            <text class="step-name">{{item.title}}</text>
+          </view>
+          <view class="timeline-desc hint mt-8">{{item.desc}}</view>
+
+          <view class="mt-8" wx:if="{{item.step === 3}}">
+            <view class="call-btn" bindtap="call12333">拨打 12333</view>
+            <view class="hint mt-8">工作时间：周一至周五 9:00-17:00</view>
+          </view>
+
+          <view class="timeline-detail-box mt-8">{{item.detail}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="title mb-16">材料准备</view>
+    <view class="material-item" wx:for="{{materials}}" wx:key="title">
+      <view class="material-index">{{index + 1}}</view>
+      <view class="material-info">
+        <view class="material-title">{{item.title}}</view>
+        <view class="material-intro hint mt-8">{{item.intro}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="title mb-16">服务边界</view>
+    <view class="timeline-detail-box">本工具用于记录、测算、常见规则自查和材料整理，不替代专业机构意见，也不代办任何争议处理事项。需要人工核实时，可联系 12333、人社服务窗口或工会等公开渠道。</view>
+  </view>
+
+</view>
