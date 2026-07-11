@@ -105,7 +105,7 @@
 
     <view class="card negotiate-card">
       <text class="title">可准备的材料</text>
-      <text class="subtitle mt-8">可先保存合同原件、工资记录、考勤记录和沟通记录。本工具只做信息自查，不替代律师或主管部门意见。</text>
+      <text class="subtitle mt-8">可先保存合同原件、工资记录、考勤记录和沟通记录。本工具只做信息自查，不替代专业机构意见。</text>
     </view>
 
     <!-- 操作按钮 -->
@@ -114,6 +114,6 @@
       <view class="action-gap"></view>
       <button class="btn-primary flex-1" bindtap="reset">重新自查</button>
     </view>
-    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">保存到我的记录</button>
+    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">查看我的记录</button>
   </block>
 </view>

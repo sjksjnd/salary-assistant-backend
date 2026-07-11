@@ -30,7 +30,7 @@ Page({
     settingsExpanded: false,
     fontScale: 'medium',
     fontScaleClass: '',
-    defaultShift: 'morning',
+    defaultShift: 'day',
     notifyEnabled: false,
     notifyTime: '09:00'
   },
@@ -48,7 +48,7 @@ Page({
 
   _loadSettings() {
     const fontScale = storage.get('font_scale', 'medium') || 'medium';
-    const defaultShift = storage.get('default_shift', 'morning');
+    const defaultShift = this._normalizeShift(storage.get('default_shift', 'day'));
     const notifyEnabled = storage.get('notify_enabled', false);
     const notifyTime = storage.get('notify_time', '09:00');
     app.globalData.fontScale = fontScale;
@@ -87,6 +87,11 @@ Page({
         }
       })
       .catch(() => {});
+  },
+
+  _normalizeShift(value) {
+    if (value === 'night' || value === '夜班') return 'night';
+    return 'day';
   },
 
   _syncSettingToBackend(key, value) {
@@ -257,6 +262,7 @@ Page({
     const shift = e.currentTarget.dataset.shift;
     this.setData({ defaultShift: shift });
     storage.set('default_shift', shift);
+    this._syncSettingToBackend('defaultShift', shift);
   },
 
   onNotifyChange(e) {
@@ -317,7 +323,7 @@ Page({
   restoreData() {
     wx.showModal({
       title: '数据恢复',
-      content: '当前版本暂不支持自动恢复。请妥善保留导出的备份文件。',
+      content: '请妥善保留导出的备份文件。如需恢复，可联系产品支持协助处理。',
       showCancel: false
     });
   },
@@ -336,7 +342,7 @@ Page({
         this.setData({
           isLoggedIn: false,
           userInfo: null,
-          defaultShift: 'morning',
+          defaultShift: 'day',
           notifyEnabled: false,
           notifyTime: '09:00',
           fontScale: 'medium',

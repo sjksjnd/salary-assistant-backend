@@ -502,6 +502,86 @@
   padding: 12rpx 0;
 }
 
+.detail-card {
+  padding-bottom: 12rpx;
+}
+
+.detail-section {
+  padding-top: 18rpx;
+  border-top: 1rpx solid #EEF2F6;
+}
+
+.detail-section:first-of-type {
+  border-top: 0;
+}
+
+.detail-section-head {
+  margin-bottom: 8rpx;
+}
+
+.money-record {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #F0F3F7;
+}
+
+.money-record:last-child {
+  border-bottom: 0;
+}
+
+.record-main {
+  min-width: 0;
+  flex: 1;
+  padding-right: 16rpx;
+}
+
+.record-name {
+  display: block;
+  color: var(--text-primary);
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.record-meta {
+  display: block;
+  margin-top: 6rpx;
+  color: var(--text-tertiary);
+  font-size: 23rpx;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.record-side {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.record-amount {
+  color: var(--text-primary);
+  font-size: 28rpx;
+  font-weight: 800;
+  margin-right: 14rpx;
+}
+
+.record-delete {
+  min-width: 88rpx;
+  height: 52rpx;
+  line-height: 52rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  color: #D93025;
+  background: #FFF1F0;
+  font-size: 23rpx;
+}
+
+.record-delete::after {
+  border: 0;
+}
+
 /* 分类选择网格 */
 .category-grid {
   display: flex;

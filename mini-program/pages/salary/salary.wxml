@@ -145,6 +145,36 @@
     </view>
   </view>
 
+  <view class="card detail-card" wx:if="{{detailGroups.length > 0}}">
+    <view class="title mb-8">本月明细</view>
+    <view class="detail-section" wx:for="{{detailGroups}}" wx:for-item="group" wx:key="key">
+      <view class="detail-section-head flex-between">
+        <text class="subtitle">{{group.title}}</text>
+        <text class="hint">{{group.records.length}} 笔</text>
+      </view>
+      <view
+        class="money-record"
+        wx:for="{{group.records}}"
+        wx:for-item="record"
+        wx:key="id"
+      >
+        <view class="record-main">
+          <text class="record-name">{{record.categoryLabel}}</text>
+          <text class="record-meta">{{record.dateText}} · {{record.noteText}}</text>
+        </view>
+        <view class="record-side">
+          <text class="record-amount">¥{{record.amountText}}</text>
+          <button
+            class="record-delete"
+            data-kind="{{group.key}}"
+            data-id="{{record.id}}"
+            catchtap="deleteSalaryRecord"
+          >删除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <view class="card empty-state" wx:if="{{!loading && referenceSalary === 0 && actualSalary === 0 && totalDeduction === 0 && totalExpense === 0 && totalAdvance === 0}}">
     <view class="hint">本月还没有数据</view>
     <view class="hint mt-8">先记工时，月底再录入实际到账工资。</view>

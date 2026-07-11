@@ -1,6 +1,7 @@
 // 记工时页：按月记录每日工时与工资
 // 功能：日历视图 / 工资参考差额 / 白班夜班时薪 / 周末和超时提醒
 const { apiRequest, toast } = require('../../utils/api');
+const { isLegalHoliday } = require('../../utils/holiday');
 
 const app = getApp();
 
@@ -19,16 +20,6 @@ const OVERTIME_RATE = {
   weekend: 2.0,    // 周末加班 200%
   holiday: 3.0     // 法定节假日 300%
 };
-
-// 2026年法定节假日（简化版，应从后端动态获取）
-const HOLIDAYS_2026 = [
-  '2026-01-01', '2026-02-08', '2026-02-09', '2026-02-10', '2026-02-11',
-  '2026-02-12', '2026-02-13', '2026-02-14', '2026-04-04', '2026-04-05',
-  '2026-04-06', '2026-05-01', '2026-05-02', '2026-05-03', '2026-06-19',
-  '2026-06-20', '2026-06-21', '2026-09-25', '2026-09-26', '2026-09-27',
-  '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05',
-  '2026-10-06', '2026-10-07'
-];
 
 const OVERTIME_REMINDER_SHOWN_KEY = 'workhours_overtime_reminder_shown';
 
@@ -113,7 +104,13 @@ Page({
     if (this.data._storageCache[key] !== undefined) {
       return this.data._storageCache[key];
     }
-    const value = wx.getStorageSync(key) || defaultValue;
+    let value = wx.getStorageSync(key);
+    if (value === '' || value === undefined || value === null) {
+      value = wx.getStorageSync('yunke_' + key);
+    }
+    if (value === '' || value === undefined || value === null) {
+      value = defaultValue;
+    }
     this.setData({ [`_storageCache.${key}`]: value });
     return value;
   },
@@ -127,12 +124,19 @@ Page({
     const nightRate = this._getStorage('night_rate');
     const weekendReminder = this._getStorage('reminder_weekend', true);
     const overtimeReminder = this._getStorage('reminder_overtime', true);
+    const defaultShift = this._getStorage('default_shift', '白班');
     this.setData({
       defaultDayRate: dayRate,
       defaultNightRate: nightRate,
+      'form.shift': this._normalizeShift(defaultShift),
       'reminders.weekend': weekendReminder !== false,
       'reminders.overtime': overtimeReminder !== false
     });
+  },
+
+  _normalizeShift(value) {
+    if (value === 'night' || value === '夜班') return '夜班';
+    return '白班';
   },
 
   _applyFontScale() {
@@ -189,7 +193,7 @@ Page({
       const date = new Date(year, month1 - 1, d);
       const weekday = date.getDay();
       const isWeekend = weekday === 0 || weekday === 6;
-      const isHoliday = HOLIDAYS_2026.indexOf(dateStr) !== -1;
+      const isHoliday = isLegalHoliday(dateStr);
       const record = recordMap[dateStr];
       days.push({
         empty: false,
@@ -285,7 +289,7 @@ Page({
       const date = new Date(r.date);
       const weekday = date.getDay();
       const isWeekend = weekday === 0 || weekday === 6;
-      const isHoliday = HOLIDAYS_2026.indexOf(r.date) !== -1;
+      const isHoliday = isLegalHoliday(r.date);
 
       if (isHoliday) {
         statutoryWage += h * rate * OVERTIME_RATE.holiday;
@@ -379,7 +383,10 @@ Page({
   },
 
   _openAddModal(date) {
-    const rate = this.data.defaultDayRate || '';
+    const defaultShift = this._normalizeShift(this._getStorage('default_shift', '白班'));
+    const rate = defaultShift === '夜班'
+      ? (this.data.defaultNightRate || this.data.defaultDayRate || '')
+      : (this.data.defaultDayRate || '');
     // 重置提醒标记
     this._hasWeekendReminder = false;
     this._hasOvertimeReminder = false;
@@ -390,7 +397,7 @@ Page({
       form: {
         date: date,
         hours: '',
-        shift: '白班',
+        shift: defaultShift,
         rate: rate
       }
     });

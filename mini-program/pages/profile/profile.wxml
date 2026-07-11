@@ -62,10 +62,8 @@
       <view class="setting-row">
         <text class="setting-label">默认班次</text>
         <view class="option-group">
-          <view class="option-btn {{defaultShift === 'morning' ? 'active' : ''}}"
-                bindtap="onShiftChange" data-shift="morning">早班</view>
-          <view class="option-btn {{defaultShift === 'midday' ? 'active' : ''}}"
-                bindtap="onShiftChange" data-shift="midday">中班</view>
+          <view class="option-btn {{defaultShift === 'day' ? 'active' : ''}}"
+                bindtap="onShiftChange" data-shift="day">白班</view>
           <view class="option-btn {{defaultShift === 'night' ? 'active' : ''}}"
                 bindtap="onShiftChange" data-shift="night">夜班</view>
         </view>

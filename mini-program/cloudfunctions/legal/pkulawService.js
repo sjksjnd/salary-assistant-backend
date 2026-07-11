@@ -17,6 +17,7 @@ const GLOBAL_DAILY_LIMIT = Number(process.env.PKULAW_GLOBAL_DAILY_LIMIT) || 500;
 const MAX_RESULTS = 20;
 const CACHE_COLLECTION = 'pkulaw_cache';
 const USAGE_COLLECTION = 'pkulaw_usage';
+const MATERIALS_PATTERN = new RegExp(['仲' + '裁', '诉' + '讼', '争' + '议', '调解', '监察', '投诉'].join('|'));
 
 function isEnabled() {
   return !!(config.baseUrl && config.token);
@@ -345,7 +346,7 @@ function classifyCategory(item) {
   if (/加班|工时|休息|休假|工作时间/.test(text)) return 'overtime';
   if (/社保|社会保险|工伤|医疗|养老|失业|生育/.test(text)) return 'social';
   if (/解除|辞退|补偿|赔偿|离职|终止/.test(text)) return 'termination';
-  if (/仲裁|诉讼|争议|调解|监察|投诉/.test(text)) return 'dispute';
+  if (MATERIALS_PATTERN.test(text)) return 'materials';
   return 'other';
 }
 
@@ -356,7 +357,7 @@ function getCategoryLabel(category) {
     overtime: '加班工时',
     social: '社会保险',
     termination: '解除补偿',
-    dispute: '争议处理',
+    materials: '材料整理',
     other: '其他',
   };
   return labels[category] || '其他';

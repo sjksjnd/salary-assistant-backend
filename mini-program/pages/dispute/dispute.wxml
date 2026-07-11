@@ -45,7 +45,7 @@
 
   <view class="card">
     <view class="title mb-16">服务边界</view>
-    <view class="timeline-detail-box">本工具用于记录、测算、常见规则自查和材料整理，不替代专业机构意见，也不代办任何争议处理事项。需要人工核实时，可联系 12333、人社服务窗口或工会等公开渠道。</view>
+    <view class="timeline-detail-box">本工具用于记录、测算、常见规则自查和材料整理，不替代专业机构意见，也不代办任何处理事项。需要人工核实时，可联系 12333、人社服务窗口或工会等公开渠道。</view>
   </view>
 
 </view>

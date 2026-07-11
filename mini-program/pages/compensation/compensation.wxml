@@ -87,7 +87,7 @@
 
     <view class="card negotiate-card">
       <text class="title">使用说明</text>
-      <text class="subtitle mt-8">请先核对劳动合同、工资流水、社保记录和离职材料。具体争议处理请咨询 12333、劳动监察、工会或持证律师。</text>
+      <text class="subtitle mt-8">请先核对劳动合同、工资流水、社保记录和离职材料。需要人工核实时，可联系 12333、人社服务窗口、工会等公开渠道。</text>
     </view>
 
     <!-- 证据清单 -->
@@ -118,6 +118,6 @@
       <view class="action-gap"></view>
       <button class="btn-primary flex-1" bindtap="restart">重新测算</button>
     </view>
-    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">保存到我的记录</button>
+    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">查看我的记录</button>
   </block>
 </view>

@@ -71,7 +71,7 @@ const PROCESS_STEPS = [
   '整理合同和工资记录',
   '核对离职原因和沟通记录',
   '拨打12333了解公开规则',
-  '必要时咨询工会、劳动监察或持证律师'
+  '需要人工核实时，联系 12333、人社服务窗口或工会等公开渠道'
 ];
 
 Page({
@@ -225,13 +225,13 @@ Page({
     }, 80);
   },
 
-  // 保存测算记录（后端 /compensation/calculate 已自动保存记录，此处仅提示）
+  // 后端 /compensation/calculate 已自动保存记录，这里直接进入记录页。
   saveRecord() {
     if (!this.data.result) {
       toast('请先完成参考测算');
       return;
     }
-    toast('记录已保存', 'success');
+    wx.navigateTo({ url: '/pages/records/records?type=compensation' });
   },
 
   copySummary() {

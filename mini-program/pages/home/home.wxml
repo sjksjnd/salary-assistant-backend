@@ -90,7 +90,7 @@
 
     <view class="boundary-card card">
       <text class="boundary-title">服务边界</text>
-      <text class="boundary-text mt-8">本工具用于记录、测算和常见规则自查，内容仅供核对参考，不替代专业机构意见，也不代办任何争议处理事项。</text>
+      <text class="boundary-text mt-8">本工具用于记录、测算和常见规则自查，内容仅供核对参考，不替代专业机构意见，也不代办任何处理事项。</text>
     </view>
   </view>
 </view>

@@ -1,5 +1,6 @@
 // 工资核对页：月底核对实际到账、工时参考工资和日常扣款花销
 const { apiRequest, toast } = require('../../utils/api');
+const { isLegalHoliday } = require('../../utils/holiday');
 
 const AMOUNT_MIN = 1;
 const AMOUNT_MAX = 200000;
@@ -27,15 +28,6 @@ const OVERTIME_RATE = {
   weekend: 2,
   holiday: 3
 };
-
-const HOLIDAYS_2026 = [
-  '2026-01-01', '2026-02-08', '2026-02-09', '2026-02-10', '2026-02-11',
-  '2026-02-12', '2026-02-13', '2026-02-14', '2026-04-04', '2026-04-05',
-  '2026-04-06', '2026-05-01', '2026-05-02', '2026-05-03', '2026-06-19',
-  '2026-06-20', '2026-06-21', '2026-09-25', '2026-09-26', '2026-09-27',
-  '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05',
-  '2026-10-06', '2026-10-07'
-];
 
 function formatMonth(date) {
   const y = date.getFullYear();
@@ -104,6 +96,7 @@ Page({
     },
     expenseStats: [],
     deductionStats: [],
+    detailGroups: [],
     actualSalaryModal: false,
     deductionModal: false,
     expenseModal: false,
@@ -181,9 +174,9 @@ Page({
         if (seq !== this._loadSeq) return;
         const failedLabels = res.filter(item => item.failed).map(item => item.label);
         const [settlement, deductions, expenses, advances, workData] = res.map(item => item.data);
-        const dedList = Array.isArray(deductions) ? deductions : [];
-        const expList = Array.isArray(expenses) ? expenses : [];
-        const advList = Array.isArray(advances) ? advances : [];
+        const dedList = this.decorateMoneyRecords(Array.isArray(deductions) ? deductions : [], DEDUCTION_CATEGORIES, '扣款');
+        const expList = this.decorateMoneyRecords(Array.isArray(expenses) ? expenses : [], EXPENSE_CATEGORIES, '花销');
+        const advList = this.decorateMoneyRecords(Array.isArray(advances) ? advances : [], [], '预支');
         const workRecords = Array.isArray(workData) ? workData : (workData && workData.records) || [];
         const workSummary = this.computeWorkSummary(workRecords);
         const totalDeduction = this.sumAmount(dedList);
@@ -234,6 +227,7 @@ Page({
           }),
           expenseStats: this.buildStats(expList, EXPENSE_CATEGORIES),
           deductionStats: this.buildStats(dedList, DEDUCTION_CATEGORIES),
+          detailGroups: this.buildDetailGroups(dedList, expList, advList),
           'actualSalaryForm.amount': actualSalary > 0 ? money(actualSalary) : ''
         });
       })
@@ -262,7 +256,7 @@ Page({
       const weekday = date.getDay();
       const dateStr = record.date || record.recordDate || '';
       const isWeekend = weekday === 0 || weekday === 6;
-      const isHoliday = HOLIDAYS_2026.indexOf(dateStr) !== -1;
+      const isHoliday = isLegalHoliday(dateStr);
 
       if (isHoliday) {
         referenceSalary += h * rate * OVERTIME_RATE.holiday;
@@ -392,6 +386,42 @@ Page({
       .sort((a, b) => b.amount - a.amount);
   },
 
+  getCategoryLabel(value, categories, fallback) {
+    const found = (categories || []).find(item => item.value === value);
+    return found ? found.label : fallback;
+  },
+
+  formatRecordDate(value) {
+    if (!value) return '未填日期';
+    const parts = String(value).split('-');
+    if (parts.length === 3) {
+      return parseInt(parts[1], 10) + '月' + parseInt(parts[2], 10) + '日';
+    }
+    return String(value);
+  },
+
+  decorateMoneyRecords(list, categories, fallbackLabel) {
+    return (list || []).map(item => {
+      const category = item.category || item.type || '';
+      const amount = Number(item.amount != null ? item.amount : item.money) || 0;
+      const note = item.note || item.purpose || '';
+      return Object.assign({}, item, {
+        categoryLabel: this.getCategoryLabel(category, categories, fallbackLabel),
+        amountText: money(amount),
+        dateText: this.formatRecordDate(item.date || item.recordDate),
+        noteText: note || '无备注'
+      });
+    });
+  },
+
+  buildDetailGroups(deductions, expenses, advances) {
+    return [
+      { key: 'deduction', title: '扣款明细', empty: '暂无扣款', records: deductions || [] },
+      { key: 'expense', title: '花销明细', empty: '暂无花销', records: expenses || [] },
+      { key: 'advance', title: '预支明细', empty: '暂无预支', records: advances || [] }
+    ].filter(group => group.records.length > 0);
+  },
+
   prevMonth() {
     const [y, m] = this.data.currentMonth.split('-').map(n => parseInt(n, 10));
     const d = new Date(y, m - 2, 1);
@@ -454,6 +484,41 @@ Page({
       expenseModal: false,
       advanceModal: false,
       submitting: false
+    });
+  },
+
+  deleteSalaryRecord(e) {
+    const id = e.currentTarget.dataset.id;
+    const kind = e.currentTarget.dataset.kind;
+    const config = {
+      deduction: { path: '/salary/deductions', label: '扣款' },
+      expense: { path: '/salary/expenses', label: '花销' },
+      advance: { path: '/salary/advances', label: '预支' }
+    }[kind];
+    if (!id || !config || this.data.submitting) return;
+
+    wx.showModal({
+      title: '删除这条' + config.label + '？',
+      content: '删除后，本月账单金额会同步更新。',
+      confirmText: '删除',
+      confirmColor: '#D93025',
+      success: res => {
+        if (!res.confirm) return;
+        this.setData({ submitting: true });
+        apiRequest(config.path, {
+          method: 'DELETE',
+          data: { id }
+        })
+          .then(() => {
+            toast('已删除', 'success');
+            this.setData({ submitting: false });
+            this.loadData();
+          })
+          .catch(err => {
+            this.setData({ submitting: false });
+            toast(err.message || '删除失败');
+          });
+      }
     });
   },
 

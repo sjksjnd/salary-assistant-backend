@@ -191,13 +191,13 @@ Page({
     this._analyzeTimers = null;
   },
 
-  // 保存自查记录（后端 /contract/analyze 已自动保存记录，此处仅提示）
+  // 后端 /contract/analyze 已自动保存记录，这里直接进入记录页。
   saveRecord() {
     if (!this.data.result) {
       toast('请先完成自查');
       return;
     }
-    toast('记录已保存', 'success');
+    wx.navigateTo({ url: '/pages/records/records?type=contract' });
   },
 
   copyCheckList() {

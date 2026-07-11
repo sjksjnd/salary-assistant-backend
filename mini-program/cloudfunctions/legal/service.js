@@ -13,7 +13,7 @@ const CATEGORIES = [
   { key: 'overtime', label: '加班工时' },
   { key: 'social', label: '社会保险' },
   { key: 'termination', label: '解除补偿' },
-  { key: 'dispute', label: '争议处理' },
+  { key: 'materials', label: '材料整理' },
 ];
 
 const SCENARIO_KEYWORDS = {
@@ -157,7 +157,7 @@ async function smartSearch(allArticles, q, limit = 20, options = {}) {
 
 function buildAnswer(q, articles) {
   if (!articles.length) {
-    return '暂未找到直接匹配的相关规则。可以换一个关键词，或拨打 12333 咨询当地劳动保障部门。';
+    return '暂未找到直接匹配的相关规则。可以换一个关键词，或通过 12333 等公开渠道核实当地信息。';
   }
 
   const lines = ['根据你填写的信息，找到以下相关规则：'];

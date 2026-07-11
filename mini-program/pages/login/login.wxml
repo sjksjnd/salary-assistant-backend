@@ -61,7 +61,7 @@
           <view class="modal-section">二、用户义务</view>
           <view class="modal-paragraph">用户应合法使用本应用，并保证自行填写的信息真实、准确、合法。</view>
           <view class="modal-section">三、服务边界</view>
-          <view class="modal-paragraph">本应用内容仅供记录核对参考，不替代专业机构意见，也不代办任何争议处理事项。需要人工核实时，可联系当地人社部门、12333 热线或工会等公开渠道。</view>
+          <view class="modal-paragraph">本应用内容仅供记录核对参考，不替代专业机构意见，也不代办任何处理事项。需要人工核实时，可联系当地人社部门、12333 热线或工会等公开渠道。</view>
         </block>
         <block wx:else>
           <view class="modal-section">一、信息收集</view>
