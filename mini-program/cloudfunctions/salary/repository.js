@@ -19,6 +19,7 @@ async function ensureSalaryCollections() {
 }
 
 async function findUserByOpenid(openid) {
+  if (!openid) return null;
   await ensureCollections(db, ['users']);
   const res = await db.collection('users').where({ openid }).limit(1).get();
   return res.data.length > 0 ? res.data[0] : null;
@@ -55,6 +56,7 @@ async function findDeductionsByMonth(userId, month) {
 }
 
 async function findDeductionById(id) {
+  if (!id) return null;
   await ensureCollections(db, ['salary_deductions']);
   const doc = await db.collection('salary_deductions').doc(id).get();
   return doc.data || null;
@@ -114,6 +116,7 @@ async function findExpensesByMonth(userId, month) {
 }
 
 async function findExpenseById(id) {
+  if (!id) return null;
   await ensureCollections(db, ['salary_expenses']);
   const doc = await db.collection('salary_expenses').doc(id).get();
   return doc.data || null;
@@ -172,6 +175,7 @@ async function findAdvancesByMonth(userId, month) {
 }
 
 async function findAdvanceById(id) {
+  if (!id) return null;
   await ensureCollections(db, ['salary_advances']);
   const doc = await db.collection('salary_advances').doc(id).get();
   return doc.data || null;

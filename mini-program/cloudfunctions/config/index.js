@@ -77,6 +77,7 @@ async function acceptAgreement(event) {
     return fail(40001, validation.message);
   }
 
+  if (!openid) return fail(40101, '请先登录');
   const user = await repo.findUserByOpenid(openid);
   if (!user) return fail(40101, '用户不存在');
   const userId = user._id;

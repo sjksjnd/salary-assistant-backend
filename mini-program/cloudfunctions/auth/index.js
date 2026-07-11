@@ -35,6 +35,7 @@ exports.main = async (event, context) => {
 };
 
 async function handleLogin(openid, event) {
+  if (!openid) return fail(40101, '请先登录');
   await repo.ensureAuthCollections();
 
   let user = await repo.findUserByOpenid(openid);
@@ -66,6 +67,7 @@ async function handleLogout(openid) {
 }
 
 async function handleProfile(openid) {
+  if (!openid) return fail(40101, '请先登录');
   const user = await repo.findUserByOpenid(openid);
   if (!user) return fail(40401, '用户不存在');
 
