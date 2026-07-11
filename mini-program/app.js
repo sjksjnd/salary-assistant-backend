@@ -1,3 +1,5 @@
+const { normalizeFontScale } = require('./utils/fontScale');
+
 App({
   globalData: {
     userInfo: null,
@@ -35,7 +37,7 @@ App({
       const fontScale = wx.getStorageSync('yunke_font_scale');
 
       if (userInfo) this.globalData.userInfo = userInfo;
-      if (fontScale) this.globalData.fontScale = fontScale;
+      if (fontScale) this.globalData.fontScale = normalizeFontScale(fontScale);
     } catch (e) {
       console.warn('Failed to load stored auth:', e);
     }

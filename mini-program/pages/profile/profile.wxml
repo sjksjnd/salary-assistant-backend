@@ -53,8 +53,6 @@
                 bindtap="onFontScaleChange" data-scale="medium">中</view>
           <view class="option-btn {{fontScale === 'large' ? 'active' : ''}}"
                 bindtap="onFontScaleChange" data-scale="large">大</view>
-          <view class="option-btn {{fontScale === 'extra-large' ? 'active' : ''}}"
-                bindtap="onFontScaleChange" data-scale="extra-large">超大</view>
         </view>
       </view>
 

@@ -1,4 +1,5 @@
 const { apiRequest, toast } = require('../../utils/api');
+const { applyPageFontScale } = require('../../utils/fontScale');
 
 const app = getApp();
 
@@ -38,13 +39,7 @@ Page({
 
   // 应用字号缩放（中年劳动者字号偏大）
   _applyFontScale() {
-    const scale = (app && app.globalData && app.globalData.fontScale) || 'medium';
-    let cls = '';
-    if (scale === 'large') cls = 'font-scale-large';
-    else if (scale === 'extra-large') cls = 'font-scale-extra-large';
-    if (this.data.fontScaleClass !== cls) {
-      this.setData({ fontScaleClass: cls });
-    }
+    applyPageFontScale(this, app);
   },
 
   // 文本输入

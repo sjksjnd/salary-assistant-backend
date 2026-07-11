@@ -1,4 +1,5 @@
 const { apiRequest, toast } = require('../../utils/api');
+const { getFontScaleClass } = require('../../utils/fontScale');
 
 const app = getApp();
 
@@ -14,13 +15,6 @@ const LEVEL_LABEL = {
   medium: '一般',
   low: '提示'
 };
-
-function fontScaleClass(scale) {
-  if (scale === 'large') return 'font-scale-large';
-  if (scale === 'extra-large') return 'font-scale-extra-large';
-  if (scale === 'small') return 'font-scale-small';
-  return '';
-}
 
 function parseDetail(raw) {
   if (!raw) return null;
@@ -181,14 +175,14 @@ Page({
     const initialType = ['contract', 'compensation'].indexOf(options && options.type) >= 0 ? options.type : 'all';
     this.setData({
       activeType: initialType,
-      fontScaleClass: fontScaleClass((app.globalData && app.globalData.fontScale) || 'medium')
+      fontScaleClass: getFontScaleClass((app.globalData && app.globalData.fontScale) || 'medium')
     });
     this.loadRecords(true);
   },
 
   onShow() {
     this.setData({
-      fontScaleClass: fontScaleClass((app.globalData && app.globalData.fontScale) || 'medium')
+      fontScaleClass: getFontScaleClass((app.globalData && app.globalData.fontScale) || 'medium')
     });
   },
 

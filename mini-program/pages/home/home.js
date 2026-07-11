@@ -1,5 +1,6 @@
 // 首页：今日工作台
 const { apiRequest, isLoggedIn, toast } = require('../../utils/api');
+const { applyPageFontScale } = require('../../utils/fontScale');
 
 const app = getApp();
 
@@ -86,16 +87,7 @@ Page({
   },
 
   _applyFontScale() {
-    const scale = app.globalData.fontScale;
-    let cls = '';
-    if (scale === 'large') {
-      cls = 'font-scale-large';
-    } else if (scale === 'extra-large') {
-      cls = 'font-scale-extra-large';
-    }
-    if (this.data.fontScaleClass !== cls) {
-      this.setData({ fontScaleClass: cls });
-    }
+    applyPageFontScale(this, app);
   },
 
   _loadDashboard() {

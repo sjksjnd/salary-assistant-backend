@@ -76,7 +76,7 @@ function validateSettingsUpdate(event) {
     }
   }
 
-  if (event.fontScale && !['small', 'medium', 'large', 'extra-large'].includes(event.fontScale)) {
+  if (event.fontScale && !['small', 'medium', 'large'].includes(event.fontScale)) {
     return { valid: false, message: '字号设置无效' };
   }
 

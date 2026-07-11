@@ -2,6 +2,7 @@
 // 功能：日历视图 / 工资参考差额 / 白班夜班时薪 / 周末和超时提醒
 const { apiRequest, toast } = require('../../utils/api');
 const { isLegalHoliday, syncHolidayDatesForMonth } = require('../../utils/holiday');
+const { applyPageFontScale } = require('../../utils/fontScale');
 
 const app = getApp();
 
@@ -140,16 +141,7 @@ Page({
   },
 
   _applyFontScale() {
-    const scale = app.globalData.fontScale;
-    let cls = '';
-    if (scale === 'large') {
-      cls = 'font-scale-large';
-    } else if (scale === 'extra-large') {
-      cls = 'font-scale-extra-large';
-    }
-    if (this.data.fontScaleClass !== cls) {
-      this.setData({ fontScaleClass: cls });
-    }
+    applyPageFontScale(this, app);
   },
 
   // 设置当前月份（month 为 1-indexed）

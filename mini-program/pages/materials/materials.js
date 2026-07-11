@@ -1,6 +1,8 @@
 // 材料整理页
 
 // 常见资料整理步骤
+const { applyPageFontScale } = require('../../utils/fontScale');
+
 const TIMELINE = [
   {
     step: 1,
@@ -66,13 +68,7 @@ Page({
   // 应用字号缩放
   _applyFontScale() {
     const app = getApp();
-    const scale = (app && app.globalData && app.globalData.fontScale) || 'medium';
-    let cls = '';
-    if (scale === 'large') cls = 'font-scale-large';
-    else if (scale === 'extra-large') cls = 'font-scale-extra-large';
-    if (this.data.fontScaleClass !== cls) {
-      this.setData({ fontScaleClass: cls });
-    }
+    applyPageFontScale(this, app);
   },
 
   // 拨打 12333

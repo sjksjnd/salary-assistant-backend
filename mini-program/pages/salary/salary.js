@@ -1,6 +1,7 @@
 // 工资核对页：月底核对实际到账、工时参考工资和日常扣款花销
 const { apiRequest, toast } = require('../../utils/api');
 const { isLegalHoliday, syncHolidayDatesForMonth } = require('../../utils/holiday');
+const { applyPageFontScale } = require('../../utils/fontScale');
 
 const AMOUNT_MIN = 1;
 const AMOUNT_MAX = 200000;
@@ -143,11 +144,7 @@ Page({
 
   _applyFontScale() {
     const app = getApp();
-    const scale = (app && app.globalData && app.globalData.fontScale) || 'medium';
-    let cls = '';
-    if (scale === 'large') cls = 'font-scale-large';
-    else if (scale === 'extra-large') cls = 'font-scale-extra-large';
-    if (this.data.fontScaleClass !== cls) this.setData({ fontScaleClass: cls });
+    applyPageFontScale(this, app);
   },
 
   _checkLogin() {

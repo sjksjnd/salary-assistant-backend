@@ -2,17 +2,9 @@
 const { toast, apiRequest } = require('../../utils/api');
 const auth = require('../../utils/auth');
 const storage = require('../../utils/storage');
+const { getFontScaleClass, normalizeFontScale } = require('../../utils/fontScale');
 
 const app = getApp();
-
-function fontScaleClass(scale) {
-  switch (scale) {
-    case 'large': return 'font-scale-large';
-    case 'extra-large': return 'font-scale-extra-large';
-    case 'small': return 'font-scale-small';
-    default: return '';
-  }
-}
 
 function formatBackupDate(date) {
   const pad = n => String(n).padStart(2, '0');
@@ -47,14 +39,14 @@ Page({
   },
 
   _loadSettings() {
-    const fontScale = storage.get('font_scale', 'medium') || 'medium';
+    const fontScale = normalizeFontScale(storage.get('font_scale', 'medium'));
     const defaultShift = this._normalizeShift(storage.get('default_shift', 'day'));
     const notifyEnabled = storage.get('notify_enabled', false);
     const notifyTime = storage.get('notify_time', '09:00');
     app.globalData.fontScale = fontScale;
     this.setData({
       fontScale,
-      fontScaleClass: fontScaleClass(fontScale),
+      fontScaleClass: getFontScaleClass(fontScale),
       defaultShift,
       notifyEnabled,
       notifyTime
@@ -67,10 +59,11 @@ Page({
         if (!data) return;
         const updates = {};
         if (data.fontScale) {
-          updates.fontScale = data.fontScale;
-          updates.fontScaleClass = fontScaleClass(data.fontScale);
-          app.globalData.fontScale = data.fontScale;
-          storage.set('font_scale', data.fontScale);
+          const fontScale = normalizeFontScale(data.fontScale);
+          updates.fontScale = fontScale;
+          updates.fontScaleClass = getFontScaleClass(fontScale);
+          app.globalData.fontScale = fontScale;
+          storage.set('font_scale', fontScale);
         }
         const remoteNotifyEnabled = data.notifyEnabled !== undefined ? data.notifyEnabled : data.reminderEnabled;
         const remoteNotifyTime = data.notifyTime || data.reminderTime;
@@ -247,12 +240,12 @@ Page({
   },
 
   onFontScaleChange(e) {
-    const scale = e.currentTarget.dataset.scale;
+    const scale = normalizeFontScale(e.currentTarget.dataset.scale);
     app.globalData.fontScale = scale;
     storage.set('font_scale', scale);
     this.setData({
       fontScale: scale,
-      fontScaleClass: fontScaleClass(scale)
+      fontScaleClass: getFontScaleClass(scale)
     });
     this._syncSettingToBackend('fontScale', scale);
     toast('字体大小已更新', 'success');
