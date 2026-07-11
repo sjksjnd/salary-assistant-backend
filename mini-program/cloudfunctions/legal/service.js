@@ -202,6 +202,10 @@ function mergeArticles(primary, fallback) {
   return result;
 }
 
+async function getRuntimeStatus(caller = {}) {
+  return pkulawService.getUsageStatus(caller);
+}
+
 module.exports = {
   getCategories,
   getCategoryLabel,
@@ -212,5 +216,6 @@ module.exports = {
   smartSearch,
   askQuestion,
   searchByScenarios,
+  getRuntimeStatus,
   SCENARIO_KEYWORDS,
 };

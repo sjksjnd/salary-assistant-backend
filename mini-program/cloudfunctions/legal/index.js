@@ -31,6 +31,9 @@ exports.main = async (event) => {
         return await askQuestion(event.q || event.question, event.limit, caller);
       case 'scenarioSearch':
         return await scenarioSearch(event.scenarios, event.limit, caller);
+      case 'status':
+      case 'usageStatus':
+        return await usageStatus(caller);
       default:
         return fail(40001, '未知操作');
     }
@@ -74,4 +77,15 @@ async function scenarioSearch(scenarios, limit = 10, caller = {}) {
   const allArticles = await repo.findAllArticles(200);
   const articles = await service.searchByScenarios(allArticles, list, limit, caller);
   return ok(articles);
+}
+
+async function usageStatus(caller = {}) {
+  const status = await service.getRuntimeStatus(caller);
+  const articles = await repo.findAllArticles(200);
+  return ok({
+    pkulaw: status,
+    localRules: {
+      count: articles.length,
+    },
+  });
 }

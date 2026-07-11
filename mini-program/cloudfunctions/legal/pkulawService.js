@@ -159,6 +159,39 @@ async function canCallExternal(caller) {
   return true;
 }
 
+async function getUsageStatus(options = {}) {
+  const caller = normalizeCaller(options);
+  const globalLimit = Math.max(0, GLOBAL_DAILY_LIMIT);
+  const userLimit = Math.max(0, USER_DAILY_LIMIT);
+  const [globalCount, userCount] = await Promise.all([
+    getUsageCount('global'),
+    getUsageCount(caller.userKey),
+  ]);
+
+  return {
+    enabled: isEnabled(),
+    date: todayKey(),
+    cacheTtlSeconds: CACHE_TTL,
+    memoryCacheSize: memoryCache.size,
+    limits: {
+      globalDaily: globalLimit,
+      userDaily: userLimit,
+    },
+    usage: {
+      global: {
+        used: globalCount,
+        limit: globalLimit,
+        remaining: Math.max(0, globalLimit - globalCount),
+      },
+      user: {
+        used: userCount,
+        limit: userLimit,
+        remaining: Math.max(0, userLimit - userCount),
+      },
+    },
+  };
+}
+
 function requestJson(payload) {
   return new Promise((resolve, reject) => {
     const target = new URL(config.baseUrl);
@@ -369,4 +402,5 @@ module.exports = {
   getArticle,
   normalizeArticles,
   canCallExternal,
+  getUsageStatus,
 };
