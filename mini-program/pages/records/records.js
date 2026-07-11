@@ -214,7 +214,7 @@ Page({
     }
 
     this.setData({ loading: true });
-    return apiRequest('/contract/records?' + params.join('&'))
+    return apiRequest('/records?' + params.join('&'))
       .then(data => {
         const items = data && Array.isArray(data.items) ? data.items : [];
         const nextRecords = items.map(normalizeRecord);
@@ -243,7 +243,7 @@ Page({
       detailOriginalExpanded: false,
       detailLoading: true
     });
-    apiRequest('/contract/records/' + id)
+    apiRequest('/records/' + id)
       .then(data => {
         const selectedRecord = normalizeRecord(Object.assign({}, localRecord, data || {}));
         this.setData({ selectedRecord, detailLoading: false });
@@ -300,7 +300,7 @@ Page({
       confirmColor: '#E53935',
       success: res => {
         if (!res.confirm) return;
-        apiRequest('/contract/records/' + record.id, { method: 'DELETE' })
+        apiRequest('/records/' + record.id, { method: 'DELETE' })
           .then(() => {
             toast('已删除', 'success');
             this.setData({

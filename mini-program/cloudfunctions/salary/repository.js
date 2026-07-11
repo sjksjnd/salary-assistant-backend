@@ -65,6 +65,24 @@ async function deleteDeduction(id) {
   await db.collection('salary_deductions').doc(id).remove();
 }
 
+async function updateDeduction(id, data) {
+  await ensureCollections(db, ['salary_deductions']);
+  const now = new Date();
+  const recordDate = data.recordDate || data.month + '-01';
+  await db.collection('salary_deductions').doc(id).update({
+    data: {
+      month: data.month,
+      category: data.category,
+      amount: data.amount,
+      note: data.note,
+      recordDate,
+      updatedAt: now,
+    },
+  });
+  const updated = await db.collection('salary_deductions').doc(id).get();
+  return updated.data;
+}
+
 async function createExpense(userId, data) {
   await ensureCollections(db, ['salary_expenses']);
   const now = new Date();
@@ -106,6 +124,24 @@ async function deleteExpense(id) {
   await db.collection('salary_expenses').doc(id).remove();
 }
 
+async function updateExpense(id, data) {
+  await ensureCollections(db, ['salary_expenses']);
+  const now = new Date();
+  const recordDate = data.recordDate || data.month + '-01';
+  await db.collection('salary_expenses').doc(id).update({
+    data: {
+      month: data.month,
+      category: data.category,
+      amount: data.amount,
+      note: data.note,
+      recordDate,
+      updatedAt: now,
+    },
+  });
+  const updated = await db.collection('salary_expenses').doc(id).get();
+  return updated.data;
+}
+
 async function createAdvance(userId, data) {
   await ensureCollections(db, ['salary_advances']);
   const now = new Date();
@@ -144,6 +180,23 @@ async function findAdvanceById(id) {
 async function deleteAdvance(id) {
   await ensureCollections(db, ['salary_advances']);
   await db.collection('salary_advances').doc(id).remove();
+}
+
+async function updateAdvance(id, data) {
+  await ensureCollections(db, ['salary_advances']);
+  const now = new Date();
+  const recordDate = data.recordDate || data.month + '-01';
+  await db.collection('salary_advances').doc(id).update({
+    data: {
+      month: data.month,
+      amount: data.amount,
+      note: data.note,
+      recordDate,
+      updatedAt: now,
+    },
+  });
+  const updated = await db.collection('salary_advances').doc(id).get();
+  return updated.data;
 }
 
 async function findBillByMonth(userId, month) {
@@ -232,14 +285,17 @@ module.exports = {
   findDeductionsByMonth,
   findDeductionById,
   deleteDeduction,
+  updateDeduction,
   createExpense,
   findExpensesByMonth,
   findExpenseById,
   deleteExpense,
+  updateExpense,
   createAdvance,
   findAdvancesByMonth,
   findAdvanceById,
   deleteAdvance,
+  updateAdvance,
   findBillByMonth,
   findBillsByYear,
   createBill,

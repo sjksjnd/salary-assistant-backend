@@ -1,7 +1,7 @@
 // 记工时页：按月记录每日工时与工资
 // 功能：日历视图 / 工资参考差额 / 白班夜班时薪 / 周末和超时提醒
 const { apiRequest, toast } = require('../../utils/api');
-const { isLegalHoliday } = require('../../utils/holiday');
+const { isLegalHoliday, syncHolidayDatesForMonth } = require('../../utils/holiday');
 
 const app = getApp();
 
@@ -217,7 +217,8 @@ Page({
     // Use a sequence number so stale responses (from a previous month) are discarded.
     const seq = ++this._loadSeq;
     this.setData({ loading: true });
-    apiRequest('/workhours/month/' + this.data.currentMonth)
+    syncHolidayDatesForMonth(this.data.currentMonth)
+      .then(() => apiRequest('/workhours/month/' + this.data.currentMonth))
       .then(data => {
         // Discard if a newer request has been initiated.
         if (seq !== this._loadSeq) return;

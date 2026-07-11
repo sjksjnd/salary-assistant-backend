@@ -567,6 +567,7 @@
   margin-right: 14rpx;
 }
 
+.record-edit,
 .record-delete {
   min-width: 88rpx;
   height: 52rpx;
@@ -578,7 +579,17 @@
   font-size: 23rpx;
 }
 
+.record-edit {
+  color: #2864AC;
+  background: #EEF5FF;
+  margin-right: 10rpx;
+}
+
 .record-delete::after {
+  border: 0;
+}
+
+.record-edit::after {
   border: 0;
 }
 

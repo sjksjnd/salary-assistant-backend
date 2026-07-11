@@ -1,6 +1,6 @@
 // 工资核对页：月底核对实际到账、工时参考工资和日常扣款花销
 const { apiRequest, toast } = require('../../utils/api');
-const { isLegalHoliday } = require('../../utils/holiday');
+const { isLegalHoliday, syncHolidayDatesForMonth } = require('../../utils/holiday');
 
 const AMOUNT_MIN = 1;
 const AMOUNT_MAX = 200000;
@@ -105,9 +105,9 @@ Page({
     billSummary: null,
     billSections: [],
     actualSalaryForm: { amount: '' },
-    deductionForm: { category: 'meal', amount: '', note: '', date: '' },
-    expenseForm: { category: 'dining', amount: '', note: '', date: '' },
-    advanceForm: { amount: '', purpose: '', date: '' },
+    deductionForm: { id: '', category: 'meal', amount: '', note: '', date: '' },
+    expenseForm: { id: '', category: 'dining', amount: '', note: '', date: '' },
+    advanceForm: { id: '', amount: '', purpose: '', date: '' },
     shareModal: false,
     shareImage: '',
     deductionCategories: DEDUCTION_CATEGORIES,
@@ -120,8 +120,11 @@ Page({
     this.setData({
       currentMonth: month,
       monthLabel: formatMonthLabel(month),
+      'deductionForm.id': '',
       'deductionForm.date': todayStr(),
+      'expenseForm.id': '',
       'expenseForm.date': todayStr(),
+      'advanceForm.id': '',
       'advanceForm.date': todayStr()
     });
     this._applyFontScale();
@@ -163,13 +166,13 @@ Page({
       .then(data => ({ data, label, failed: false }))
       .catch(() => ({ data: fallback, label, failed: warnOnFail }));
 
-    return Promise.all([
+    return syncHolidayDatesForMonth(month).then(() => Promise.all([
       safeRequest(apiRequest('/salary/bill/' + month), null, '到账工资', false),
       safeRequest(apiRequest('/salary/deductions/' + month), [], '扣款'),
       safeRequest(apiRequest('/salary/expenses/' + month), [], '花销'),
       safeRequest(apiRequest('/salary/advances/' + month), [], '预支'),
       safeRequest(apiRequest('/workhours/month/' + month), { records: [] }, '工时')
-    ])
+    ]))
       .then(res => {
         if (seq !== this._loadSeq) return;
         const failedLabels = res.filter(item => item.failed).map(item => item.label);
@@ -456,7 +459,7 @@ Page({
     if (!this._checkLogin()) return;
     this.setData({
       deductionModal: true,
-      deductionForm: { category: 'meal', amount: '', note: '', date: todayStr() }
+      deductionForm: { id: '', category: 'meal', amount: '', note: '', date: todayStr() }
     });
   },
 
@@ -464,7 +467,7 @@ Page({
     if (!this._checkLogin()) return;
     this.setData({
       expenseModal: true,
-      expenseForm: { category: 'dining', amount: '', note: '', date: todayStr() }
+      expenseForm: { id: '', category: 'dining', amount: '', note: '', date: todayStr() }
     });
   },
 
@@ -472,7 +475,7 @@ Page({
     if (!this._checkLogin()) return;
     this.setData({
       advanceModal: true,
-      advanceForm: { amount: '', purpose: '', date: todayStr() }
+      advanceForm: { id: '', amount: '', purpose: '', date: todayStr() }
     });
   },
 
@@ -520,6 +523,59 @@ Page({
           });
       }
     });
+  },
+
+  editSalaryRecord(e) {
+    const id = e.currentTarget.dataset.id;
+    const kind = e.currentTarget.dataset.kind;
+    if (!id || !kind) return;
+    const sourceMap = {
+      deduction: this.data.deductions,
+      expense: this.data.expenses,
+      advance: this.data.advances
+    };
+    const record = (sourceMap[kind] || []).find(item => String(item.id) === String(id));
+    if (!record) {
+      toast('记录不存在');
+      return;
+    }
+    if (kind === 'deduction') {
+      this.setData({
+        deductionModal: true,
+        deductionForm: {
+          id: record.id,
+          category: record.category || 'other',
+          amount: String(record.amount || ''),
+          note: record.note || '',
+          date: record.date || record.recordDate || todayStr()
+        }
+      });
+      return;
+    }
+    if (kind === 'expense') {
+      this.setData({
+        expenseModal: true,
+        expenseForm: {
+          id: record.id,
+          category: record.category || 'other',
+          amount: String(record.amount || ''),
+          note: record.note || '',
+          date: record.date || record.recordDate || todayStr()
+        }
+      });
+      return;
+    }
+    if (kind === 'advance') {
+      this.setData({
+        advanceModal: true,
+        advanceForm: {
+          id: record.id,
+          amount: String(record.amount || ''),
+          purpose: record.purpose || record.note || '',
+          date: record.date || record.recordDate || todayStr()
+        }
+      });
+    }
   },
 
   onActualSalaryField(e) {
@@ -610,8 +666,9 @@ Page({
     if (this.data.submitting) return;
     this.setData({ submitting: true });
     apiRequest('/salary/deductions', {
-      method: 'POST',
+      method: form.id ? 'PUT' : 'POST',
       data: {
+        id: form.id || undefined,
         category: form.category,
         amount,
         note: form.note || '',
@@ -620,7 +677,7 @@ Page({
       }
     })
       .then(() => {
-        toast('已添加扣款', 'success');
+        toast(form.id ? '扣款已更新' : '已添加扣款', 'success');
         this.setData({ deductionModal: false, submitting: false });
         this.loadData();
       })
@@ -641,8 +698,9 @@ Page({
     if (this.data.submitting) return;
     this.setData({ submitting: true });
     apiRequest('/salary/expenses', {
-      method: 'POST',
+      method: form.id ? 'PUT' : 'POST',
       data: {
+        id: form.id || undefined,
         category: form.category,
         amount,
         note: form.note || '',
@@ -651,7 +709,7 @@ Page({
       }
     })
       .then(() => {
-        toast('已添加花销', 'success');
+        toast(form.id ? '花销已更新' : '已添加花销', 'success');
         this.setData({ expenseModal: false, submitting: false });
         this.loadData();
       })
@@ -676,8 +734,9 @@ Page({
     if (this.data.submitting) return;
     this.setData({ submitting: true });
     apiRequest('/salary/advances', {
-      method: 'POST',
+      method: form.id ? 'PUT' : 'POST',
       data: {
+        id: form.id || undefined,
         amount,
         purpose: form.purpose,
         month: this.data.currentMonth,
@@ -685,7 +744,7 @@ Page({
       }
     })
       .then(() => {
-        toast('已添加预支', 'success');
+        toast(form.id ? '预支已更新' : '已添加预支', 'success');
         this.setData({ advanceModal: false, submitting: false });
         this.loadData();
       })

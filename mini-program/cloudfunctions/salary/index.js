@@ -29,18 +29,24 @@ exports.main = async (event, context) => {
         return await getDeductions(userId, event.month);
       case 'deleteDeduction':
         return await deleteDeduction(userId, event.id);
+      case 'updateDeduction':
+        return await updateDeduction(userId, event);
       case 'saveExpense':
         return await saveExpense(userId, event);
       case 'getExpenses':
         return await getExpenses(userId, event.month);
       case 'deleteExpense':
         return await deleteExpense(userId, event.id);
+      case 'updateExpense':
+        return await updateExpense(userId, event);
       case 'saveAdvance':
         return await saveAdvance(userId, event);
       case 'getAdvances':
         return await getAdvances(userId, event.month);
       case 'deleteAdvance':
         return await deleteAdvance(userId, event.id);
+      case 'updateAdvance':
+        return await updateAdvance(userId, event);
       case 'saveBill':
         return await saveBill(userId, event);
       case 'getBill':
@@ -96,6 +102,28 @@ async function deleteDeduction(userId, id) {
   return ok(null, '删除成功');
 }
 
+async function updateDeduction(userId, event) {
+  const record = await repo.findDeductionById(event.id);
+  if (!record || record.userId !== userId) return fail(40401, '记录不存在');
+
+  const { month, category, amount, note, recordDate } = service.normalizeDeductionInput(event);
+  const monthValidation = service.validateMonth(month);
+  if (!monthValidation.valid) return fail(40001, monthValidation.message);
+  const categoryValidation = service.validateCategory(category);
+  if (!categoryValidation.valid) return fail(40001, categoryValidation.message);
+  const amountValidation = service.validateAmount(amount);
+  if (!amountValidation.valid) return fail(40001, amountValidation.message);
+
+  const updated = await repo.updateDeduction(event.id, {
+    month,
+    category,
+    amount: amountValidation.amount,
+    note,
+    recordDate,
+  });
+  return ok(service.formatDeduction(updated), '保存成功');
+}
+
 async function saveExpense(userId, event) {
   const { month, category, amount, note, recordDate } = service.normalizeExpenseInput(event);
 
@@ -134,6 +162,28 @@ async function deleteExpense(userId, id) {
   return ok(null, '删除成功');
 }
 
+async function updateExpense(userId, event) {
+  const record = await repo.findExpenseById(event.id);
+  if (!record || record.userId !== userId) return fail(40401, '记录不存在');
+
+  const { month, category, amount, note, recordDate } = service.normalizeExpenseInput(event);
+  const monthValidation = service.validateMonth(month);
+  if (!monthValidation.valid) return fail(40001, monthValidation.message);
+  const categoryValidation = service.validateCategory(category);
+  if (!categoryValidation.valid) return fail(40001, categoryValidation.message);
+  const amountValidation = service.validateAmount(amount);
+  if (!amountValidation.valid) return fail(40001, amountValidation.message);
+
+  const updated = await repo.updateExpense(event.id, {
+    month,
+    category,
+    amount: amountValidation.amount,
+    note,
+    recordDate,
+  });
+  return ok(service.formatExpense(updated), '保存成功');
+}
+
 async function saveAdvance(userId, event) {
   const { month, amount, note, recordDate } = service.normalizeAdvanceInput(event);
 
@@ -166,6 +216,25 @@ async function deleteAdvance(userId, id) {
 
   await repo.deleteAdvance(id);
   return ok(null, '删除成功');
+}
+
+async function updateAdvance(userId, event) {
+  const record = await repo.findAdvanceById(event.id);
+  if (!record || record.userId !== userId) return fail(40401, '记录不存在');
+
+  const { month, amount, note, recordDate } = service.normalizeAdvanceInput(event);
+  const monthValidation = service.validateMonth(month);
+  if (!monthValidation.valid) return fail(40001, monthValidation.message);
+  const amountValidation = service.validateAmount(amount);
+  if (!amountValidation.valid) return fail(40001, amountValidation.message);
+
+  const updated = await repo.updateAdvance(event.id, {
+    month,
+    amount: amountValidation.amount,
+    note,
+    recordDate,
+  });
+  return ok(service.formatAdvance(updated), '保存成功');
 }
 
 async function saveBill(userId, event) {

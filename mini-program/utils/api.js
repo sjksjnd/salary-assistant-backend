@@ -115,12 +115,15 @@ const API_MAP = {
   'GET /workhours/month': { name: 'workhours', action: 'month' },
   'POST /salary/deductions': { name: 'salary', action: 'saveDeduction' },
   'GET /salary/deductions': { name: 'salary', action: 'getDeductions' },
+  'PUT /salary/deductions': { name: 'salary', action: 'updateDeduction' },
   'DELETE /salary/deductions': { name: 'salary', action: 'deleteDeduction' },
   'POST /salary/expenses': { name: 'salary', action: 'saveExpense' },
   'GET /salary/expenses': { name: 'salary', action: 'getExpenses' },
+  'PUT /salary/expenses': { name: 'salary', action: 'updateExpense' },
   'DELETE /salary/expenses': { name: 'salary', action: 'deleteExpense' },
   'POST /salary/advances': { name: 'salary', action: 'saveAdvance' },
   'GET /salary/advances': { name: 'salary', action: 'getAdvances' },
+  'PUT /salary/advances': { name: 'salary', action: 'updateAdvance' },
   'DELETE /salary/advances': { name: 'salary', action: 'deleteAdvance' },
   'POST /salary/bill': { name: 'salary', action: 'saveBill' },
   'GET /salary/bill': { name: 'salary', action: 'getBill' },
@@ -128,6 +131,9 @@ const API_MAP = {
   'GET /salary/board': { name: 'salary', action: 'getBoard' },
   'POST /contract/detect': { name: 'contract', action: 'detect' },
   'POST /contract/analyze': { name: 'contract', action: 'detect' },
+  'GET /records': { name: 'contract', action: 'records' },
+  'GET /record': { name: 'contract', action: 'recordDetail' },
+  'DELETE /record': { name: 'contract', action: 'deleteRecord' },
   'GET /contract/records': { name: 'contract', action: 'records' },
   'GET /contract/record': { name: 'contract', action: 'recordDetail' },
   'DELETE /contract/record': { name: 'contract', action: 'deleteRecord' },
@@ -175,9 +181,9 @@ function normalizeRoute(method, pathname, query) {
     params.month = match[2];
   }
 
-  match = pathname.match(/^\/contract\/records\/([^/]+)$/);
+  match = pathname.match(/^\/(?:contract\/records|records)\/([^/]+)$/);
   if (match) {
-    normalizedPath = '/contract/record';
+    normalizedPath = pathname.indexOf('/contract/') === 0 ? '/contract/record' : '/record';
     params.id = match[1];
   }
 

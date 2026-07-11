@@ -30,9 +30,16 @@ const HOLIDAY_DATES = {
   ]
 };
 
+const syncedYears = {};
+
 function getYear(dateStr) {
   const year = String(dateStr || '').slice(0, 4);
   return /^\d{4}$/.test(year) ? year : '';
+}
+
+function normalizeYear(year) {
+  const value = String(year || '').slice(0, 4);
+  return /^\d{4}$/.test(value) ? value : '';
 }
 
 function getConfiguredDates(year) {
@@ -46,8 +53,9 @@ function getConfiguredDates(year) {
 }
 
 function getHolidayDates(year) {
-  const localDates = HOLIDAY_DATES[year] || [];
-  const configuredDates = getConfiguredDates(year);
+  const normalizedYear = normalizeYear(year);
+  const localDates = HOLIDAY_DATES[normalizedYear] || [];
+  const configuredDates = getConfiguredDates(normalizedYear);
   return Array.from(new Set(localDates.concat(configuredDates)));
 }
 
@@ -57,7 +65,56 @@ function isLegalHoliday(dateStr) {
   return getHolidayDates(year).indexOf(dateStr) !== -1;
 }
 
+function extractDates(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.dates)) return data.dates;
+  if (data && Array.isArray(data.holidays)) return data.holidays;
+  return [];
+}
+
+function syncHolidayDates(year) {
+  const normalizedYear = normalizeYear(year);
+  if (!normalizedYear) return Promise.resolve([]);
+  if (syncedYears[normalizedYear]) return Promise.resolve(getHolidayDates(normalizedYear));
+  if (typeof wx === 'undefined' || !wx.cloud || !wx.cloud.callFunction) {
+    syncedYears[normalizedYear] = true;
+    return Promise.resolve(getHolidayDates(normalizedYear));
+  }
+
+  return new Promise(resolve => {
+    wx.cloud.callFunction({
+      name: 'config',
+      data: { action: 'get', key: 'holiday_dates_' + normalizedYear },
+      success(res) {
+        const result = res.result || {};
+        if (result.code === 0 || result.code === 200) {
+          const dates = extractDates(result.data)
+            .map(item => String(item || '').trim())
+            .filter(item => /^\d{4}-\d{2}-\d{2}$/.test(item));
+          if (dates.length) {
+            try {
+              wx.setStorageSync('holiday_dates_' + normalizedYear, dates);
+            } catch (e) {}
+          }
+        }
+        syncedYears[normalizedYear] = true;
+        resolve(getHolidayDates(normalizedYear));
+      },
+      fail() {
+        syncedYears[normalizedYear] = true;
+        resolve(getHolidayDates(normalizedYear));
+      }
+    });
+  });
+}
+
+function syncHolidayDatesForMonth(month) {
+  return syncHolidayDates(normalizeYear(month));
+}
+
 module.exports = {
   getHolidayDates,
-  isLegalHoliday
+  isLegalHoliday,
+  syncHolidayDates,
+  syncHolidayDatesForMonth
 };
