@@ -266,6 +266,10 @@ Page({
     return parseInt(parts[1], 10) + '月' + parseInt(parts[2], 10) + '日';
   },
 
+  _monthFromDate(dateStr) {
+    return String(dateStr || '').slice(0, 7);
+  },
+
   // 计算统计数据和工资对比
   _computeStats(records) {
     let days = records.length;
@@ -571,10 +575,13 @@ Page({
     const wage = this._calculateWage(date, roundedH, r);
 
     this.setData({ submitting: true });
+    const isEdit = this.data.modalMode === 'edit';
+    const originalRecordDate = this.data.editingDate;
     apiRequest('/workhours', {
-      method: 'POST',
+      method: isEdit ? 'PUT' : 'POST',
       data: {
         date: date,
+        originalRecordDate: originalRecordDate,
         hours: roundedH,
         shift: shift,
         rate: r,
@@ -584,6 +591,11 @@ Page({
       .then(() => {
         this.setData({ submitting: false, showModal: false, modalMode: 'add', editingDate: '' });
         toast('保存成功', 'success');
+        const nextMonth = this._monthFromDate(date);
+        if (isEdit && nextMonth && nextMonth !== this.data.currentMonth) {
+          const parts = nextMonth.split('-');
+          this._setMonth(parseInt(parts[0], 10), parseInt(parts[1], 10));
+        }
         this._loadRecords();
       })
       .catch(err => {

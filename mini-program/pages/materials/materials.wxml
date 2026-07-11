@@ -1,7 +1,7 @@
 <!-- 材料整理页 -->
 <view class="container {{fontScaleClass}}">
 
-  <view class="card consult-tip">
+  <view class="card material-tip">
     <view class="tip-title">先把材料留好</view>
     <view class="tip-desc">把工资、合同、工时和沟通记录按时间整理好，月底核对时更省心。本页只做资料整理和信息核对。</view>
   </view>

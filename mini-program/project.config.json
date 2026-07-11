@@ -14,6 +14,8 @@
       { "type": "file", "value": ".gitignore" },
       { "type": "file", "value": ".env.local" },
       { "type": "file", "value": ".mcp.json" },
+      { "type": "file", "value": "cloudbaserc.json" },
+      { "type": "file", "value": "project.private.config.json" },
       { "type": "file", "value": "CODEBUDDY.md" },
       { "type": "file", "value": "README.md" },
       { "type": "file", "value": "generate-icons.js" },

@@ -1,7 +1,7 @@
 /* 材料整理页样式 */
 
 /* 资料整理提示卡片 */
-.consult-tip {
+.material-tip {
   background: #F7FBF9;
   border-color: #CFE8DA;
 }

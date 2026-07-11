@@ -30,6 +30,18 @@ async function findWorkRecord(userId, recordDate) {
   return res.data.length > 0 ? res.data[0] : null;
 }
 
+async function findWorkRecordById(userId, id) {
+  if (!id) return null;
+  await ensureCollections(db, ['workhour_records']);
+  try {
+    const res = await db.collection('workhour_records').doc(id).get();
+    const record = res && res.data;
+    return record && record.userId === userId ? record : null;
+  } catch (err) {
+    return null;
+  }
+}
+
 async function createWorkRecord(userId, record) {
   await ensureCollections(db, ['workhour_records']);
   const now = new Date();
@@ -73,6 +85,7 @@ module.exports = {
   findUserByOpenid,
   findUserSettings,
   findWorkRecord,
+  findWorkRecordById,
   createWorkRecord,
   updateWorkRecord,
   findMonthRecords,

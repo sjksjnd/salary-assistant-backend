@@ -56,22 +56,15 @@ Page({
         isTab: false
       },
       {
-        key: 'dispute',
+        key: 'materials',
         title: '材料整理',
         subtitle: '整理工资、工时、合同相关材料',
         tag: '材料',
-        path: '/pages/dispute/dispute',
+        path: '/pages/materials/materials',
         isTab: false
       }
     ],
     quickLinks: [
-      {
-        key: 'salary',
-        title: '工资核对',
-        subtitle: '到账、扣款、花销',
-        path: '/pages/salary/salary',
-        isTab: true
-      },
       {
         key: 'records',
         title: '我的记录',

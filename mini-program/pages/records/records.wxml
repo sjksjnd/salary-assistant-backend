@@ -142,8 +142,12 @@
 
       <view class="modal-actions mt-24">
         <button class="btn-outline action-btn" bindtap="deleteRecord">删除</button>
-        <button class="btn-primary action-btn" bindtap="goRelatedPage">
-          {{selectedRecord.type === 'compensation' ? '重新测算' : '再次自查'}}
+        <button
+          wx:if="{{selectedRecord.type === 'contract' || selectedRecord.type === 'compensation'}}"
+          class="btn-primary action-btn"
+          bindtap="goRelatedPage"
+        >
+          {{selectedRecord.type === 'compensation' ? '发起新测算' : '发起新自查'}}
         </button>
       </view>
     </view>

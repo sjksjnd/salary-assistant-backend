@@ -762,8 +762,10 @@ Page({
       { key: 'reference', label: '参考应得', amount: referenceSalary, amountText: money(referenceSalary), percent: toPercent(referenceSalary), tone: 'income' },
       { key: 'actual', label: '实际到账', amount: actualSalary, amountText: money(actualSalary), percent: toPercent(actualSalary), tone: 'actual' },
       { key: 'gap', label: '参考差额', amount: salaryGap, amountText: money(salaryGap), percent: toPercent(salaryGap), tone: 'deduction' },
+      { key: 'deduction', label: '已记扣款', amount: totalDeduction, amountText: money(totalDeduction), percent: toPercent(totalDeduction), tone: 'deduction' },
       { key: 'expense', label: '花销', amount: totalExpense, amountText: money(totalExpense), percent: toPercent(totalExpense), tone: 'expense' },
-      { key: 'advance', label: '预支', amount: totalAdvance, amountText: money(totalAdvance), percent: toPercent(totalAdvance), tone: 'advance' }
+      { key: 'advance', label: '预支', amount: totalAdvance, amountText: money(totalAdvance), percent: toPercent(totalAdvance), tone: 'advance' },
+      { key: 'remaining', label: '到账后结余', amount: Math.abs(remaining), amountText: money(remaining), percent: toPercent(Math.abs(remaining)), tone: remaining >= 0 ? 'actual' : 'deduction' }
     ];
 
     return {
@@ -775,7 +777,9 @@ Page({
         salaryGap,
         salaryGapText: money(salaryGap),
         totalDeduction,
+        totalDeductionText: money(totalDeduction),
         outTotal: totalExpense + totalAdvance,
+        outTotalText: money(totalExpense + totalAdvance),
         remaining,
         remainingText: money(remaining),
         insight: this.data.salaryInsight
@@ -804,8 +808,8 @@ Page({
   },
 
   shareBill() {
-    const { monthLabel, referenceSalary, actualSalary, salaryGap, totalExpense, totalAdvance, remaining } = this.data;
-    if (!referenceSalary && !actualSalary && !totalExpense && !totalAdvance) {
+    const { monthLabel, referenceSalary, actualSalary, salaryGap, totalDeduction, totalExpense, totalAdvance, remaining } = this.data;
+    if (!referenceSalary && !actualSalary && !totalDeduction && !totalExpense && !totalAdvance) {
       toast('本月暂无数据，无法分享');
       return;
     }
@@ -834,6 +838,7 @@ Page({
       ['参考应得', referenceSalary, '#2864AC'],
       ['实际到账', actualSalary, '#15935B'],
       ['参考差额', salaryGap, '#D97706'],
+      ['已记扣款', totalDeduction, '#D93025'],
       ['花销', totalExpense, '#F59E0B'],
       ['预支', totalAdvance, '#6B7280'],
       ['到账后结余', remaining, remaining >= 0 ? '#15935B' : '#DC2626']

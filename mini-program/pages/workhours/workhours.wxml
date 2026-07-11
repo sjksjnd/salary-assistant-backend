@@ -179,16 +179,12 @@
 
       <view class="form-group">
         <text class="form-label">日期</text>
-        <picker wx:if="{{modalMode !== 'edit'}}" mode="date" value="{{form.date}}" bindchange="onDateChange">
+        <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
           <view class="input picker-display">
             <text class="{{form.date ? '' : 'placeholder'}}">{{form.date || '请选择日期'}}</text>
             <text class="picker-arrow">▾</text>
           </view>
         </picker>
-        <view wx:else class="input readonly-display">
-          <text>{{form.date}}</text>
-          <text class="readonly-hint">如需改日期，可删除后重新添加</text>
-        </view>
       </view>
 
       <view class="form-group">

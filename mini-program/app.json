@@ -6,7 +6,7 @@
     "pages/profile/profile",
     "pages/records/records",
     "pages/compensation/compensation",
-    "pages/dispute/dispute",
+    "pages/materials/materials",
     "pages/contract/contract",
     "pages/login/login"
   ],

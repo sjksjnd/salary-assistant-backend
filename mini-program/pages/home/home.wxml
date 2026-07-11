@@ -69,7 +69,8 @@
     </view>
 
     <view class="section-head">
-      <text class="section-title">账本和记录</text>
+      <text class="section-title">记录中心</text>
+      <text class="section-desc">合同自查和金额测算结果会集中保存在这里</text>
     </view>
 
     <view class="quick-grid mb-24">

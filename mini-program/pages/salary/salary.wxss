@@ -467,11 +467,13 @@
 
 .bill-grid {
   display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
 }
 
 .bill-metric {
-  flex: 1;
+  flex: 1 1 calc(50% - 8rpx);
+  min-width: 220rpx;
   padding: 20rpx;
   border: 1rpx solid #E5E7EB;
   border-radius: 14rpx;
@@ -487,6 +489,10 @@
 
 .metric-value.success {
   color: #15935B;
+}
+
+.metric-value.danger {
+  color: #D93025;
 }
 
 .bill-section {

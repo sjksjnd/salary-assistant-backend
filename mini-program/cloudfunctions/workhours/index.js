@@ -25,6 +25,8 @@ exports.main = async (event, context) => {
     switch (action) {
       case 'save':
         return await saveRecord(userId, event);
+      case 'update':
+        return await updateRecord(userId, event);
       case 'get':
         return await getRecord(userId, event.recordDate);
       case 'month':
@@ -62,6 +64,46 @@ async function saveRecord(userId, event) {
     const created = await repo.createWorkRecord(userId, { recordDate, hours, shift, payAmount, rate });
     return ok(service.formatRecord(created), '保存成功');
   }
+}
+
+async function updateRecord(userId, event) {
+  const { recordDate, hours, shift, payAmount: rawPay, rate } = service.normalizeRecordInput(event);
+  const originalRecordDate = event.originalRecordDate || event.oldRecordDate || event.editingDate;
+  const recordId = event.id || event.recordId;
+
+  const validation = service.validateRecord(recordDate, hours);
+  if (!validation.valid) {
+    return fail(40001, validation.message);
+  }
+
+  let existing = null;
+  if (recordId) {
+    existing = await repo.findWorkRecordById(userId, recordId);
+  }
+  if (!existing && originalRecordDate) {
+    existing = await repo.findWorkRecord(userId, originalRecordDate);
+  }
+  if (!existing) {
+    return fail(40401, '记录不存在');
+  }
+
+  if (recordDate !== existing.recordDate) {
+    const conflict = await repo.findWorkRecord(userId, recordDate);
+    if (conflict && conflict._id !== existing._id) {
+      return fail(40901, '该日期已有记录，请先修改或删除原记录');
+    }
+  }
+
+  const settings = await repo.findUserSettings(userId);
+  const payAmount = service.computePayIfNeeded(rawPay, hours, shift, settings);
+  const updated = await repo.updateWorkRecord(existing._id, {
+    recordDate,
+    hours,
+    shift,
+    payAmount,
+    rate,
+  });
+  return ok(service.formatRecord(updated), '保存成功');
 }
 
 async function getRecord(userId, recordDate) {

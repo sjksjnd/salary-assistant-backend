@@ -274,7 +274,7 @@ Page({
       wx.navigateTo({ url: '/pages/contract/contract' });
       return;
     }
-    toast('暂不支持打开该记录类型');
+    this.closeDetail();
   },
 
   copyArticleLink(e) {

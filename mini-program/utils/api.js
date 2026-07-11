@@ -112,6 +112,7 @@ const API_MAP = {
   'POST /users/nickname': { name: 'users', action: 'updateNickname' },
   'POST /users/avatar': { name: 'users', action: 'updateAvatar' },
   'POST /workhours': { name: 'workhours', action: 'save' },
+  'PUT /workhours': { name: 'workhours', action: 'update' },
   'POST /workhours/batch': { name: 'workhours', action: 'batch' },
   'DELETE /workhours': { name: 'workhours', action: 'delete' },
   'GET /workhours/month': { name: 'workhours', action: 'month' },
