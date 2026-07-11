@@ -107,6 +107,8 @@ const API_MAP = {
   'GET /users/profile': { name: 'users', action: 'profile' },
   'GET /users/settings': { name: 'users', action: 'getSettings' },
   'PUT /users/settings': { name: 'users', action: 'updateSettings' },
+  'GET /users/export': { name: 'users', action: 'exportData' },
+  'DELETE /users/data': { name: 'users', action: 'deleteData' },
   'POST /users/nickname': { name: 'users', action: 'updateNickname' },
   'POST /users/avatar': { name: 'users', action: 'updateAvatar' },
   'POST /workhours': { name: 'workhours', action: 'save' },

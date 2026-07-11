@@ -98,6 +98,37 @@ function normalizeSettingsUpdateData(updateData) {
   return result;
 }
 
+function sanitizeRecord(item) {
+  const result = { ...item };
+  delete result.userId;
+  delete result.openid;
+  return result;
+}
+
+function sanitizeList(list) {
+  return (list || []).map(sanitizeRecord);
+}
+
+function buildExportData(user, data) {
+  return {
+    exportedAt: new Date().toISOString(),
+    profile: formatUser(user),
+    settings: sanitizeList(data.user_settings),
+    agreements: sanitizeList(data.user_agreements),
+    workhours: sanitizeList(data.workhour_records),
+    salary: {
+      deductions: sanitizeList(data.salary_deductions),
+      expenses: sanitizeList(data.salary_expenses),
+      advances: sanitizeList(data.salary_advances),
+      bills: sanitizeList(data.salary_bills),
+    },
+    records: sanitizeList(data.detection_records),
+    usage: {
+      pkulaw: sanitizeList(data.pkulaw_usage),
+    },
+  };
+}
+
 module.exports = {
   formatUser,
   formatSettings,
@@ -106,4 +137,5 @@ module.exports = {
   buildSettingsUpdateData,
   validateSettingsUpdate,
   normalizeSettingsUpdateData,
+  buildExportData,
 };

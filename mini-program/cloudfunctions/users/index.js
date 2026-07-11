@@ -33,6 +33,10 @@ exports.main = async (event, context) => {
         return await getSettings(userId);
       case 'updateSettings':
         return await updateSettings(userId, event);
+      case 'exportData':
+        return await exportData(user, userId, openid);
+      case 'deleteData':
+        return await deleteData(userId, openid);
       default:
         return fail(40001, '未知操作');
     }
@@ -79,4 +83,14 @@ async function updateSettings(userId, event) {
   const settings = await repo.findUserSettings(userId);
   const updated = await repo.updateSettings(settings._id, updateData);
   return ok(service.formatSettings(updated), '保存成功');
+}
+
+async function exportData(user, userId, openid) {
+  const data = await repo.findUserData(userId, openid);
+  return ok(service.buildExportData(user, data), '导出成功');
+}
+
+async function deleteData(userId, openid) {
+  const removed = await repo.deleteUserData(userId, openid);
+  return ok({ removed }, '账号数据已删除');
 }

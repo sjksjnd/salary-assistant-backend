@@ -280,6 +280,27 @@ Page({
   },
 
   backupData() {
+    if (app.isLoggedIn()) {
+      this.exportAccountData();
+      return;
+    }
+    this.exportLocalData();
+  },
+
+  exportAccountData() {
+    wx.showLoading({ title: '导出中...' });
+    apiRequest('/users/export', { method: 'GET' })
+      .then(data => {
+        wx.hideLoading();
+        this.writeBackupFile(data || {}, '账号数据');
+      })
+      .catch(err => {
+        wx.hideLoading();
+        toast(err.message || '导出失败');
+      });
+  },
+
+  exportLocalData() {
     const now = new Date();
     const allData = {};
     ['worker_law_user'].forEach(key => {
@@ -291,17 +312,21 @@ Page({
       if (value !== '' && value !== null && value !== undefined) allData[key] = value;
     });
 
-    const fileName = '工友守护薪工记_备份_' + formatBackupDate(now) + '.json';
-    const jsonStr = JSON.stringify({
+    this.writeBackupFile({
       app: '工友守护-薪工记',
       version: '1.0.0',
       backupTime: now.toISOString(),
       data: allData
-    }, null, 2);
+    }, '本机缓存');
+  },
 
+  writeBackupFile(payload, label) {
+    const now = new Date();
+    const fileName = '工友守护薪工记_' + label + '_' + formatBackupDate(now) + '.json';
+    const jsonStr = JSON.stringify(payload, null, 2);
     wx.showModal({
       title: '数据备份',
-      content: '即将备份 ' + Object.keys(allData).length + ' 项数据',
+      content: '即将生成 ' + label + ' 备份文件',
       confirmText: '确认备份',
       success: res => {
         if (!res.confirm) return;
@@ -330,8 +355,8 @@ Page({
 
   clearData() {
     wx.showModal({
-      title: '确认清除',
-      content: '将清除所有本地数据，且不可恢复，是否继续？',
+      title: '清除本机缓存',
+      content: '只会清除当前设备上的登录状态和偏好设置，不会删除云端工时、工资和记录。',
       confirmColor: '#E53935',
       confirmText: '清除',
       success: res => {
@@ -352,6 +377,59 @@ Page({
         toast('已清除所有数据', 'success');
       }
     });
+  },
+
+  deleteCloudData() {
+    if (!app.requireLogin('/pages/profile/profile')) return;
+    wx.showModal({
+      title: '删除云端账号数据',
+      content: '将删除云端保存的工时、工资账本、检测记录、设置和账号资料。建议先导出账号数据。',
+      confirmColor: '#E53935',
+      confirmText: '继续',
+      success: first => {
+        if (!first.confirm) return;
+        wx.showModal({
+          title: '再次确认',
+          content: '删除后无法恢复。确定继续删除云端账号数据吗？',
+          confirmColor: '#E53935',
+          confirmText: '删除',
+          success: second => {
+            if (!second.confirm) return;
+            this._deleteCloudDataNow();
+          }
+        });
+      }
+    });
+  },
+
+  _deleteCloudDataNow() {
+    wx.showLoading({ title: '删除中...' });
+    apiRequest('/users/data', { method: 'DELETE' })
+      .then(() => {
+        wx.hideLoading();
+        storage.clearAll();
+        app.globalData.userInfo = null;
+        app.globalData.fontScale = 'medium';
+        this.setData({
+          isLoggedIn: false,
+          userInfo: null,
+          defaultShift: 'day',
+          notifyEnabled: false,
+          notifyTime: '09:00',
+          fontScale: 'medium',
+          fontScaleClass: '',
+          settingsExpanded: false
+        });
+        wx.showModal({
+          title: '已删除',
+          content: '云端账号数据已删除，本机缓存也已清除。',
+          showCancel: false
+        });
+      })
+      .catch(err => {
+        wx.hideLoading();
+        toast(err.message || '删除失败，请稍后重试');
+      });
   },
 
   showAbout() {

@@ -89,12 +89,17 @@
   <view class="menu-group">
     <view class="menu-cell" bindtap="backupData">
       <text class="menu-icon">📤</text>
-      <text class="menu-label">导出本地数据</text>
+      <text class="menu-label">导出账号数据</text>
       <text class="arrow">›</text>
     </view>
     <view class="menu-cell" bindtap="clearData">
       <text class="menu-icon">🗑️</text>
-      <text class="menu-label danger">清除本地数据</text>
+      <text class="menu-label">清除本机缓存</text>
+      <text class="arrow">›</text>
+    </view>
+    <view class="menu-cell" wx:if="{{isLoggedIn}}" bindtap="deleteCloudData">
+      <text class="menu-icon">⚠️</text>
+      <text class="menu-label danger">删除云端账号数据</text>
       <text class="arrow">›</text>
     </view>
   </view>
