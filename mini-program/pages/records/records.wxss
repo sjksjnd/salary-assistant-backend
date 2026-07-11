@@ -374,10 +374,12 @@
 
 .modal-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 20rpx;
 }
 
 .action-btn {
-  flex: 1;
+  flex: 1 1 30%;
+  min-width: 180rpx;
   margin: 0;
 }

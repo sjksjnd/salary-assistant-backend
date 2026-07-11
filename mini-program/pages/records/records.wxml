@@ -103,7 +103,7 @@
 
         <view class="original-box mt-16" wx:if="{{selectedRecord.originalPreview}}">
           <view class="original-head" catchtap="toggleOriginalText">
-            <text class="detail-section-title">合同原文摘要</text>
+            <text class="detail-section-title">合同原文摘录</text>
             <text class="original-toggle">{{detailOriginalExpanded ? '收起' : '展开'}}</text>
           </view>
           <text class="original-text" wx:if="{{detailOriginalExpanded}}">{{selectedRecord.originalPreview}}</text>
@@ -142,6 +142,7 @@
 
       <view class="modal-actions mt-24">
         <button class="btn-outline action-btn" bindtap="deleteRecord">删除</button>
+        <button class="btn-outline action-btn" bindtap="copySelectedReport">复制报告</button>
         <button
           wx:if="{{selectedRecord.type === 'contract' || selectedRecord.type === 'compensation'}}"
           class="btn-primary action-btn"

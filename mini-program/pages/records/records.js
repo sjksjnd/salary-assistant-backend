@@ -55,6 +55,12 @@ function shortText(value, max = 96) {
   return text.length > max ? text.slice(0, max) + '...' : text;
 }
 
+function clipText(value, max = 1200) {
+  const text = cleanDisplayText(value, '');
+  if (!text) return '';
+  return text.length > max ? text.slice(0, max) + '\n...' : text;
+}
+
 function getIssueCount(detail, resultText) {
   const issues = detail && Array.isArray(detail.issues) ? detail.issues : [];
   if (issues.length) return issues.length;
@@ -118,7 +124,7 @@ function normalizeRecord(record) {
   const legalArticles = normalizeArticles(detail);
   const compensationItems = isCompensation ? normalizeCompensationItems(detail) : [];
   const issueCount = isContract ? getIssueCount(detail, resultText) : 0;
-  const originalPreview = shortText(record.description || '', 180);
+  const originalPreview = isContract ? clipText(record.description || '', 1200) : '';
   const sourceStatus = legalArticles.length > 0
     ? (legalArticles.some(item => item.url) ? '已匹配公开规则原文链接' : '已匹配公开规则信息')
     : '使用本地常见规则自查';
@@ -260,6 +266,62 @@ Page({
 
   toggleOriginalText() {
     this.setData({ detailOriginalExpanded: !this.data.detailOriginalExpanded });
+  },
+
+  copySelectedReport() {
+    const record = this.data.selectedRecord;
+    if (!record) return;
+
+    const lines = [
+      record.type === 'compensation' ? '金额参考测算报告' : '合同条款自查报告',
+      '生成时间：' + (record.createdAtText || ''),
+      '结果摘要：' + (record.summary || '查看本次记录'),
+      ''
+    ];
+
+    if (record.type === 'contract') {
+      const issues = record.issueItems || [];
+      if (issues.length) {
+        lines.push('待核对事项：');
+        issues.slice(0, 10).forEach((item, index) => {
+          lines.push((index + 1) + '. ' + (item.title || item.type || '待核对事项'));
+          if (item.suggestion) lines.push('   核对提示：' + item.suggestion);
+          if (item.law) lines.push('   相关规则：' + item.law);
+        });
+        lines.push('');
+      }
+    }
+
+    if (record.type === 'compensation') {
+      const items = record.compensationItems || [];
+      if (items.length) {
+        lines.push('测算明细：');
+        items.slice(0, 10).forEach((item, index) => {
+          lines.push((index + 1) + '. ' + item.name + '：¥' + item.amount);
+          if (item.description) lines.push('   ' + item.description);
+        });
+        lines.push('');
+      }
+    }
+
+    const articles = record.legalArticles || [];
+    if (articles.length) {
+      lines.push('相关规则来源：');
+      articles.slice(0, 6).forEach((item, index) => {
+        lines.push((index + 1) + '. ' + (item.title || '相关规则'));
+        if (item.source) lines.push('   ' + item.source);
+        if (item.url) lines.push('   原文链接：' + item.url);
+      });
+      lines.push('');
+    }
+
+    lines.push('说明：本报告仅用于记录和核对，不作为个案判断。');
+
+    wx.setClipboardData({
+      data: lines.join('\n'),
+      success: () => toast('报告已复制', 'success'),
+      fail: () => toast('复制失败，请稍后重试')
+    });
   },
 
   goRelatedPage() {
