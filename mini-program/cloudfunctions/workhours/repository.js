@@ -10,6 +10,7 @@ async function ensureBaseCollections() {
 }
 
 async function findUserByOpenid(openid) {
+  if (!openid) return null;
   await ensureCollections(db, ['users']);
   const res = await db.collection('users').where({ openid }).limit(1).get();
   return res.data.length > 0 ? res.data[0] : null;
