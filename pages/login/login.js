@@ -18,8 +18,7 @@ Page({
     logging: false,
     showUserForm: false,
     nickname: '',
-    avatarUrl: '',
-    tempToken: null
+    avatarUrl: ''
   },
 
   onLoad(options) {
@@ -30,6 +29,17 @@ Page({
       } catch (e) {}
     }
     this.setData({ redirect: redirect });
+    // Track the login-success redirect timeout so it can be cancelled if
+    // the user navigates away from the login page before it fires.
+    this._successTimer = null;
+  },
+
+  onUnload() {
+    // Clean up pending redirect timer to avoid navigating after the page is gone.
+    if (this._successTimer) {
+      clearTimeout(this._successTimer);
+      this._successTimer = null;
+    }
   },
 
   toggleAgreement() {
@@ -63,10 +73,7 @@ Page({
         this.setData({ logging: false });
         
         if (data.isNewUser) {
-          this.setData({ 
-            showUserForm: true,
-            tempToken: data.accessToken
-          });
+          this.setData({ showUserForm: true });
         } else {
           this._doLoginSuccess(data);
         }
@@ -87,7 +94,7 @@ Page({
   },
 
   submitUserForm() {
-    const { nickname, avatarUrl, tempToken } = this.data;
+    const { nickname, avatarUrl } = this.data;
     
     if (!nickname.trim()) {
       toast('请输入昵称');
@@ -114,7 +121,8 @@ Page({
   _doLoginSuccess(data) {
     toast('登录成功', 'success');
     const redirect = this.data.redirect;
-    setTimeout(() => {
+    this._successTimer = setTimeout(() => {
+      this._successTimer = null;
       const pages = getCurrentPages();
       if (pages.length > 1) {
         wx.navigateBack();

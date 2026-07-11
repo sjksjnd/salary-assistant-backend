@@ -5,3 +5,12 @@ node_modules/
 .DS_Store
 project.private.config.json
 miniprogram_npm/
+.env.local
+.mcp.json
+.codebuddy/
+.workbuddy/
+.rules/
+rules/
+codebuddy-plugin/
+CODEBUDDY.md
+cloudbaserc.json

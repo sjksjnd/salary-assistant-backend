@@ -79,22 +79,19 @@
         <view class="stat-divider"></view>
         <view class="stat-item flex-col flex-center">
           <text class="stat-num wage-num">¥{{stats.wage}}</text>
-          <text class="stat-label">预估工资</text>
+          <text class="stat-label">普通工资</text>
         </view>
       </view>
     </view>
 
-    <!-- 三层工资模型 -->
     <view class="card wage-model-card">
       <view class="flex-between">
-        <text class="title">法定工资估算</text>
-        <text class="diff-badge {{wageModel.isPositive ? 'overtime' : 'undertime'}}">¥{{wageModel.diffLabel}}</text>
+        <text class="title">工资参考</text>
       </view>
 
-      <!-- 三层工资 -->
       <view class="wage-layer mt-16">
         <view class="wage-layer-item">
-          <text class="wage-layer-label">第一层 工厂实发</text>
+          <text class="wage-layer-label">普通时薪工资</text>
           <text class="wage-layer-value">¥{{wageModel.actualWage}}</text>
         </view>
       </view>
@@ -103,30 +100,17 @@
 
       <view class="wage-layer">
         <view class="wage-layer-item">
-          <text class="wage-layer-label">第二层 法定应得</text>
+          <text class="wage-layer-label">参考应得</text>
           <text class="wage-layer-value primary">¥{{wageModel.statutoryWage}}</text>
         </view>
       </view>
 
-      <view class="wage-divider"></view>
-
-      <view class="wage-layer">
-        <view class="wage-layer-item">
-          <text class="wage-layer-label">第三层 法定差额</text>
-          <text class="wage-layer-value {{wageModel.isPositive ? 'warning' : 'success'}}">¥{{wageModel.wageDiff}}</text>
-        </view>
-      </view>
-
-      <!-- 说明 -->
       <view class="wage-hint mt-16">
-        <text>时薪 ¥{{wageModel.hourlyRate}}，法定工时 174 小时</text>
+        <text>普通工资按工时 × 时薪计算；参考应得按工作日、周末和节假日倍率估算。差额在下方单独展示。</text>
       </view>
-
-      <view class="wage-hint mt-8 {{wageModel.isPositive ? '' : 'success'}}" wx:if="{{wageModel.isPositive}}">
-        <text>⚠️ 工厂实发少于法定标准，差额 ¥{{wageModel.wageDiff}} 可主张补足</text>
-      </view>
-      <view class="wage-hint mt-8 success" wx:else>
-        <text>✅ 工厂实发已达到法定标准</text>
+      <view class="formula-box mt-12">
+        <text class="formula-main">{{wageModel.formula}}</text>
+        <text class="formula-sub mt-6">{{wageModel.overtimeNote}}</text>
       </view>
     </view>
 
@@ -139,16 +123,25 @@
         </view>
         <view class="stat-divider"></view>
         <view class="stat-item flex-col flex-center">
-          <text class="stat-num warning">¥{{stats.overtimePay}}</text>
-          <text class="stat-label">加班费</text>
+          <text class="stat-num warning">¥{{stats.overtimePremium}}</text>
+          <text class="stat-label">参考差额</text>
         </view>
       </view>
+      <view class="stats-tip mt-16">{{wageModel.formula}}。参考差额是加班倍率带来的增量，不是最终实发结论。</view>
     </view>
 
     <!-- 记录列表（列表视图） -->
     <view class="list" wx:if="{{viewMode === 'list'}}">
       <block wx:if="{{records.length > 0}}">
-        <view class="card record-item" wx:for="{{records}}" wx:key="_id">
+        <view
+          class="card record-item"
+          wx:for="{{records}}"
+          wx:key="date"
+          data-date="{{item.date}}"
+          bindtap="onRecordTap"
+          hover-class="card-hover"
+          hover-stay-time="100"
+        >
           <view class="flex-between">
             <view class="flex-col record-left">
               <text class="record-date">{{item.displayDate}}</text>
@@ -159,6 +152,7 @@
             </view>
             <view class="flex-col flex-center record-right">
               <text class="record-wage">¥{{item.wage}}</text>
+              <text class="record-action">编辑</text>
             </view>
           </view>
         </view>
@@ -172,34 +166,38 @@
 
   <!-- 底部固定添加按钮 -->
   <view class="bottom-bar">
-    <view class="btn-primary add-btn" bindtap="openAddModal">+ 添加工时记录</view>
+    <view class="btn-primary add-btn" bindtap="openAddModal">添加工时记录</view>
   </view>
 
-  <!-- 添加记录弹窗 -->
+  <!-- 添加/编辑记录弹窗 -->
   <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeAddModal">
     <view class="modal" catchtap="noop">
       <view class="modal-header flex-between">
-        <text class="title">添加工时记录</text>
+        <text class="title">{{modalMode === 'edit' ? '编辑工时记录' : '添加工时记录'}}</text>
         <text class="close-btn" bindtap="closeAddModal">✕</text>
       </view>
 
       <view class="form-group">
         <text class="form-label">日期</text>
-        <picker mode="date" value="{{form.date}}" bindchange="onDateChange">
+        <picker wx:if="{{modalMode !== 'edit'}}" mode="date" value="{{form.date}}" bindchange="onDateChange">
           <view class="input picker-display">
             <text class="{{form.date ? '' : 'placeholder'}}">{{form.date || '请选择日期'}}</text>
             <text class="picker-arrow">▾</text>
           </view>
         </picker>
+        <view wx:else class="input readonly-display">
+          <text>{{form.date}}</text>
+          <text class="readonly-hint">如需改日期，可删除后重新添加</text>
+        </view>
       </view>
 
       <view class="form-group">
-        <text class="form-label">工时（小时，1-24）</text>
+        <text class="form-label">工时（小时，0.5-24，支持半小时）</text>
         <input
           class="input"
           type="digit"
           value="{{form.hours}}"
-          placeholder="请输入工时"
+          placeholder="如：8、8.5、10.5"
           maxlength="5"
           bindinput="onHoursInput"
         />
@@ -235,7 +233,15 @@
         bindtap="submitRecord"
         loading="{{submitting}}"
         disabled="{{submitting}}"
-      >保存</button>
+      >{{modalMode === 'edit' ? '保存修改' : '保存'}}</button>
+
+      <button
+        wx:if="{{modalMode === 'edit'}}"
+        class="delete-btn mt-16"
+        bindtap="deleteRecord"
+        loading="{{deleting}}"
+        disabled="{{submitting || deleting}}"
+      >删除这条记录</button>
     </view>
   </view>
 </view>

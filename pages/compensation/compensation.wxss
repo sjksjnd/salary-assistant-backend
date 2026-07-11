@@ -30,7 +30,7 @@
   display: flex;
   align-items: center;
   padding: 24rpx 0;
-  border-bottom: 1rpx solid #E5E5E5;
+  border-bottom: 1rpx solid var(--border);
 }
 
 .radio-item:last-child {
@@ -70,10 +70,15 @@
   width: 24rpx;
 }
 
+.secondary-action {
+  width: 100%;
+}
+
 /* 结果金额卡片 */
 .result-amount-card {
   text-align: center;
   padding: 48rpx 32rpx;
+  scroll-margin-top: 24rpx;
 }
 
 .amount-wrap {
@@ -128,6 +133,13 @@
   font-weight: 600;
 }
 
+.law-meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
 .law-title {
   display: block;
 }
@@ -137,10 +149,30 @@
   line-height: 1.6;
 }
 
+.law-link-btn {
+  margin-top: 16rpx;
+  margin-left: 0;
+  padding: 0 20rpx;
+  height: 56rpx;
+  line-height: 54rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10rpx;
+  border: 1rpx solid #2864AC;
+  background: #FFFFFF;
+  color: #2864AC;
+  font-size: 24rpx;
+}
+
+.law-link-btn::after {
+  border: none;
+}
+
 /* 协商卡片 */
 .negotiate-card {
-  background: #E8F1FA;
-  border-color: #B5C8D8;
+  background: #F7FBF9;
+  border-color: #CFE8DA;
 }
 
 /* 证据清单 */

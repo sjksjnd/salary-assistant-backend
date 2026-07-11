@@ -1,0 +1,151 @@
+<view class="container records-page {{fontScaleClass}}">
+  <view class="filter-bar">
+    <view
+      class="filter-item {{activeType === item.key ? 'active' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="key"
+      data-type="{{item.key}}"
+      bindtap="changeFilter"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="card summary-card">
+    <view class="flex-between">
+      <text class="title">我的记录</text>
+      <text class="hint">共 {{total}} 条</text>
+    </view>
+    <text class="hint mt-8">保存合同自查和金额测算结果，方便后续核对材料。</text>
+  </view>
+
+  <view class="card flex-center loading-card" wx:if="{{loading && records.length === 0}}">
+    <text class="hint">记录加载中...</text>
+  </view>
+
+  <view class="empty-card" wx:elif="{{records.length === 0}}">
+    <text class="empty-title">暂无记录</text>
+    <text class="empty-desc">完成合同自查或金额测算后，结果会显示在这里。</text>
+  </view>
+
+  <view
+    class="card record-card"
+    wx:for="{{records}}"
+    wx:key="id"
+    data-id="{{item.id}}"
+    bindtap="showDetail"
+    hover-class="card-hover"
+    hover-stay-time="100"
+  >
+    <view class="flex-between">
+      <text class="record-type type-{{item.typeClass}}">{{item.typeLabel}}</text>
+      <text class="hint">{{item.createdAtText}}</text>
+    </view>
+    <text class="record-title mt-16">{{item.description || item.typeLabel}}</text>
+    <view class="record-foot mt-12">
+      <text class="record-summary">{{item.summary}}</text>
+      <text class="record-open">查看详情</text>
+    </view>
+  </view>
+
+  <view class="load-more" wx:if="{{records.length > 0}}">
+    <text class="hint" wx:if="{{loading}}">加载中...</text>
+    <text class="hint" wx:elif="{{hasMore}}">上拉加载更多</text>
+    <text class="hint" wx:else>没有更多记录了</text>
+  </view>
+
+  <view class="modal-mask" wx:if="{{detailModal}}" bindtap="closeDetail">
+    <view class="modal-content" catchtap="">
+      <view class="flex-between">
+        <text class="title">{{selectedRecord.typeLabel}}</text>
+        <text class="modal-close" bindtap="closeDetail">×</text>
+      </view>
+      <text class="hint mt-8">{{selectedRecord.createdAtText}}</text>
+
+      <view class="detail-loading" wx:if="{{detailLoading}}">
+        <text class="hint">详情加载中...</text>
+      </view>
+
+      <block wx:elif="{{selectedRecord.type === 'contract'}}">
+        <view class="detail-report-head mt-20">
+          <view>
+            <text class="report-label">自查结果</text>
+            <view class="report-title-row mt-8">
+              <text class="overview-num">{{selectedRecord.issueCount}}</text>
+              <text class="overview-label">个待核对事项</text>
+            </view>
+          </view>
+          <text class="source-pill">{{selectedRecord.sourceStatus}}</text>
+        </view>
+
+        <view class="issue-list mt-16" wx:if="{{selectedRecord.issueItems.length > 0}}">
+          <view class="issue-card" wx:for="{{selectedRecord.issueItems}}" wx:key="index">
+            <view class="flex-between issue-head">
+              <text class="issue-title">{{item.title}}</text>
+              <text class="issue-level level-{{item.level}}">{{item.levelLabel}}</text>
+            </view>
+            <text class="issue-type mt-8">{{item.type}}</text>
+            <text class="issue-suggestion mt-10">{{item.suggestion}}</text>
+            <text class="issue-law mt-8" wx:if="{{item.law}}">{{item.law}}</text>
+          </view>
+        </view>
+
+        <view class="empty-detail mt-16" wx:else>
+          <text>这条记录暂无明细，可再次自查生成新的结果。</text>
+        </view>
+
+        <view class="article-list mt-16" wx:if="{{selectedRecord.legalArticles.length > 0}}">
+          <text class="detail-section-title">相关规则来源</text>
+          <view class="article-item" wx:for="{{selectedRecord.legalArticles}}" wx:key="index">
+            <text class="article-title">{{item.title}}</text>
+            <text class="article-source">{{item.sourceLabel}}{{item.source ? ' · ' + item.source : ''}}</text>
+            <button class="article-link-btn" wx:if="{{item.url}}" data-url="{{item.url}}" catchtap="copyArticleLink">复制原文链接</button>
+          </view>
+        </view>
+
+        <view class="original-box mt-16" wx:if="{{selectedRecord.originalPreview}}">
+          <view class="original-head" catchtap="toggleOriginalText">
+            <text class="detail-section-title">合同原文摘要</text>
+            <text class="original-toggle">{{detailOriginalExpanded ? '收起' : '展开'}}</text>
+          </view>
+          <text class="original-text" wx:if="{{detailOriginalExpanded}}">{{selectedRecord.originalPreview}}</text>
+        </view>
+      </block>
+
+      <block wx:elif="{{selectedRecord.type === 'compensation'}}">
+        <view class="detail-report-head mt-20">
+          <view>
+            <text class="report-label">测算结果</text>
+            <text class="record-title mt-8">{{selectedRecord.summary}}</text>
+          </view>
+          <text class="source-pill">{{selectedRecord.sourceStatus}}</text>
+        </view>
+        <view class="issue-list mt-16" wx:if="{{selectedRecord.compensationItems.length > 0}}">
+          <view class="issue-card" wx:for="{{selectedRecord.compensationItems}}" wx:key="index">
+            <view class="flex-between issue-head">
+              <text class="issue-title">{{item.name}}</text>
+              <text class="amount-value">¥{{item.amount}}</text>
+            </view>
+            <text class="issue-suggestion mt-10" wx:if="{{item.description}}">{{item.description}}</text>
+          </view>
+        </view>
+        <view class="empty-detail mt-16" wx:else>
+          <text>{{selectedRecord.summary}}</text>
+        </view>
+        <view class="article-list mt-16" wx:if="{{selectedRecord.legalArticles.length > 0}}">
+          <text class="detail-section-title">相关规则来源</text>
+          <view class="article-item" wx:for="{{selectedRecord.legalArticles}}" wx:key="index">
+            <text class="article-title">{{item.title}}</text>
+            <text class="article-source">{{item.sourceLabel}}{{item.source ? ' · ' + item.source : ''}}</text>
+            <button class="article-link-btn" wx:if="{{item.url}}" data-url="{{item.url}}" catchtap="copyArticleLink">复制原文链接</button>
+          </view>
+        </view>
+      </block>
+
+      <view class="modal-actions mt-24">
+        <button class="btn-outline action-btn" bindtap="deleteRecord">删除</button>
+        <button class="btn-primary action-btn" bindtap="goRelatedPage">
+          {{selectedRecord.type === 'compensation' ? '重新测算' : '再次自查'}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,19 +1,16 @@
 <!-- pages/login/login.wxml -->
 <view class="page">
-
-  <!-- 顶部 Logo 区 -->
   <view class="logo-section">
     <view class="logo-circle">
-      <text class="logo-icon">👷</text>
+      <text class="logo-icon">工</text>
     </view>
     <view class="app-title">工友守护·薪工记</view>
-    <view class="welcome-text">欢迎使用工友守护·薪工记，守护你的每一分辛苦钱</view>
+    <view class="welcome-text">记录工时工资，管理自己的劳动凭证</view>
   </view>
 
-  <!-- 用户信息填写（登录后完善） -->
   <view class="form-section" wx:if="{{showUserForm}}">
     <view class="form-title">完善个人信息</view>
-    
+
     <view class="form-row">
       <view class="form-label">头像</view>
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
@@ -24,21 +21,23 @@
 
     <view class="form-row">
       <view class="form-label">昵称</view>
-      <input type="nickname" class="nickname-input" placeholder="请输入昵称" value="{{nickname}}" bindinput="onNicknameInput" />
+      <input
+        type="nickname"
+        class="nickname-input"
+        placeholder="请输入昵称"
+        value="{{nickname}}"
+        bindinput="onNicknameInput"
+      />
     </view>
 
     <button class="login-btn mt-32" bindtap="submitUserForm">确认</button>
   </view>
 
-  <!-- 登录按钮区 -->
   <view class="login-section" wx:else>
-    <button class="login-btn"
-            bindtap="wechatLogin"
-            disabled="{{!agreed || logging}}">
+    <button class="login-btn" bindtap="wechatLogin" disabled="{{!agreed || logging}}">
       {{logging ? '登录中...' : '微信一键登录'}}
     </button>
 
-    <!-- 用户协议 -->
     <view class="agreement-row">
       <view class="checkbox {{agreed ? 'checked' : ''}}" bindtap="toggleAgreement">
         <text wx:if="{{agreed}}" class="check-icon">✓</text>
@@ -52,38 +51,25 @@
     </view>
   </view>
 
-  <!-- 底部信息 -->
-  <view class="footer">
-    <view class="footer-text">运营方：工友守护团队</view>
-    <view class="footer-text">隐私邮箱：privacy@yunkegongxin.com</view>
-  </view>
-
-  <!-- 用户协议弹窗 -->
   <view class="modal-mask" wx:if="{{showAgreement || showPrivacy}}" bindtap="closeAgreementModal">
     <view class="modal" catchtap="stopPropagation">
       <view class="modal-title">{{showAgreement ? '用户协议' : '隐私政策'}}</view>
       <scroll-view scroll-y class="modal-content">
         <block wx:if="{{showAgreement}}">
           <view class="modal-section">一、服务说明</view>
-          <view class="modal-paragraph">工友守护·薪工记（以下简称"本应用"）为用户提供工时记录、工资计算、劳动法律常识查询等服务。本应用提供的内容仅供参考，不构成法律意见。</view>
+          <view class="modal-paragraph">本应用提供工时记录、工资核对、合同条款自查和常见规则信息整理等服务。</view>
           <view class="modal-section">二、用户义务</view>
-          <view class="modal-paragraph">用户应合法使用本应用，不得利用本应用从事任何违法违规活动。用户发布的内容应真实合法，不得含有敏感、违规信息。</view>
-          <view class="modal-section">三、账号与登录</view>
-          <view class="modal-paragraph">本应用仅支持微信授权登录，登录后将自动获取你的微信昵称与头像用于个性化展示。你可随时在设置中退出登录。</view>
-          <view class="modal-section">四、免责声明</view>
-          <view class="modal-paragraph">本应用提供的法律常识、避坑经验等内容仅供参考。具体劳务纠纷请咨询当地人社部门或专业律师。本应用不对因使用本应用而产生的任何直接或间接损失承担责任。</view>
+          <view class="modal-paragraph">用户应合法使用本应用，并保证自行填写的信息真实、准确、合法。</view>
+          <view class="modal-section">三、服务边界</view>
+          <view class="modal-paragraph">本应用内容仅供记录核对参考，不替代专业机构意见，也不代办任何争议处理事项。需要人工核实时，可联系当地人社部门、12333 热线或工会等公开渠道。</view>
         </block>
         <block wx:else>
           <view class="modal-section">一、信息收集</view>
-          <view class="modal-paragraph">本应用仅在您授权后收集微信昵称、头像等基本信息，用于个性化展示。我们不收集您的身份证号、银行卡号等敏感信息。</view>
+          <view class="modal-paragraph">本应用仅在必要范围内处理微信登录信息、用户主动填写的工时工资记录和偏好设置。</view>
           <view class="modal-section">二、信息使用</view>
-          <view class="modal-paragraph">收集的信息仅用于本应用内部展示，不会出售或共享给第三方。</view>
-          <view class="modal-section">三、本地数据</view>
-          <view class="modal-paragraph">您的工时、工资、设置等数据保存在本地存储中，卸载小程序后将清除。如需迁移，请使用"数据备份"功能。</view>
-          <view class="modal-section">四、信息安全</view>
-          <view class="modal-paragraph">我们采取合理的安全措施保护您的个人信息，但无法保证绝对安全。如发生信息泄露事件，我们将及时通知您。</view>
-          <view class="modal-section">五、联系我们</view>
-          <view class="modal-paragraph">如有隐私问题，请联系：privacy@yunkegongxin.com</view>
+          <view class="modal-paragraph">相关信息用于提供应用功能、同步云端数据和改善使用体验，不会用于无关用途。</view>
+          <view class="modal-section">三、数据安全</view>
+          <view class="modal-paragraph">我们会采取合理措施保护数据安全。你可以在个人中心清除本地数据或退出登录。</view>
         </block>
       </scroll-view>
       <view class="modal-close" bindtap="closeAgreementModal">我知道了</view>

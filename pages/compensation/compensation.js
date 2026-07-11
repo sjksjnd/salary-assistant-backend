@@ -1,5 +1,7 @@
 const { apiRequest, toast } = require('../../utils/api');
 
+const app = getApp();
+
 // 默认问题列表（接口失败时使用）
 const DEFAULT_QUESTIONS = [
   {
@@ -49,12 +51,12 @@ const DEFAULT_QUESTIONS = [
       { value: 'company_terminate', label: '公司单方面辞退' },
       { value: 'self_resign', label: '自己主动辞职' },
       { value: 'contract_expire', label: '合同到期未续签' },
-      { value: 'forced_termination', label: '被迫离职（公司违法）' }
+      { value: 'forced_termination', label: '被要求离职/情况异常' }
     ]
   }
 ];
 
-// 建议保全的证据清单
+// 可整理的材料清单
 const EVIDENCE_LIST = [
   '劳动合同',
   '工资流水',
@@ -64,13 +66,12 @@ const EVIDENCE_LIST = [
   '解除劳动关系证明'
 ];
 
-// 处理流程
+// 常见核对步骤
 const PROCESS_STEPS = [
-  '保全证据',
-  '与用人单位协商沟通',
-  '拨打12333咨询',
-  '申请仲裁',
-  '向法院起诉'
+  '整理合同和工资记录',
+  '核对离职原因和沟通记录',
+  '拨打12333了解公开规则',
+  '必要时咨询工会、劳动监察或持证律师'
 ];
 
 Page({
@@ -86,6 +87,8 @@ Page({
     evidenceList: EVIDENCE_LIST,
     processSteps: PROCESS_STEPS,
     savingRecord: false,
+    // 字体缩放样式类
+    fontScaleClass: '',
     // 派生数据
     currentQuestion: null,
     canNext: false,
@@ -94,7 +97,24 @@ Page({
   },
 
   onLoad() {
+    this._applyFontScale();
     this.loadQuestions();
+  },
+
+  onShow() {
+    // 从设置页返回时刷新字号偏好
+    this._applyFontScale();
+  },
+
+  // 应用字号缩放（中年劳动者字号偏大）
+  _applyFontScale() {
+    const scale = (app && app.globalData && app.globalData.fontScale) || 'medium';
+    let cls = '';
+    if (scale === 'large') cls = 'font-scale-large';
+    else if (scale === 'extra-large') cls = 'font-scale-extra-large';
+    if (this.data.fontScaleClass !== cls) {
+      this.setData({ fontScaleClass: cls });
+    }
   },
 
   // 加载问题列表
@@ -102,8 +122,18 @@ Page({
     this.setData({ loading: true });
     apiRequest('/compensation/questions')
       .then(data => {
-        // 兼容多种返回格式
-        const questions = (data && data.questions) || (Array.isArray(data) ? data : null) || DEFAULT_QUESTIONS;
+        // Backend returns questions array directly via success() wrapper
+        let questions = null;
+        if (Array.isArray(data)) {
+          questions = data;
+        } else if (data && data.questions) {
+          questions = data.questions;
+        } else if (data && Array.isArray(data.data)) {
+          questions = data.data;
+        }
+        if (!questions || questions.length === 0) {
+          questions = DEFAULT_QUESTIONS;
+        }
         this.setData({ questions, loading: false });
         this._refreshComputed();
       })
@@ -165,7 +195,7 @@ Page({
     }
   },
 
-  // 提交计算
+  // 提交测算
   submit() {
     if (this.data.submitting) return;
     this.setData({ submitting: true });
@@ -174,24 +204,79 @@ Page({
       data: { answers: this.data.answers }
     })
       .then(result => {
-        this.setData({ submitting: false, showResult: true, result });
+        this.setData({ submitting: false, showResult: true, result }, () => {
+          this._scrollToResult();
+        });
       })
       .catch(err => {
         this.setData({ submitting: false });
-        toast(err.message || '计算失败，请稍后重试');
+        toast(err.message || '测算失败，请稍后重试');
       });
   },
 
-  // 保存检测记录（后端 /compensation/calculate 已自动保存记录，此处仅提示）
+  _scrollToResult() {
+    if (!wx.pageScrollTo) return;
+    setTimeout(() => {
+      wx.pageScrollTo({
+        selector: '#compensationResult',
+        duration: 320,
+        offsetTop: 16
+      });
+    }, 80);
+  },
+
+  // 保存测算记录（后端 /compensation/calculate 已自动保存记录，此处仅提示）
   saveRecord() {
     if (!this.data.result) {
-      toast('请先完成补偿估算');
+      toast('请先完成参考测算');
       return;
     }
     toast('记录已保存', 'success');
   },
 
-  // 重新估算
+  copySummary() {
+    const result = this.data.result;
+    if (!result) {
+      toast('请先完成参考测算');
+      return;
+    }
+
+    const lines = [
+      '金额参考测算摘要',
+      '参考金额：¥' + (result.totalAmount || 0),
+      ''
+    ];
+
+    const items = Array.isArray(result.items) ? result.items : [];
+    if (items.length) {
+      lines.push('测算明细：');
+      items.slice(0, 8).forEach((item, index) => {
+        lines.push((index + 1) + '. ' + (item.name || '测算项目') + '：¥' + (item.amount || 0));
+      });
+      lines.push('');
+    }
+
+    const articles = Array.isArray(result.legalArticles) ? result.legalArticles : [];
+    if (articles.length) {
+      lines.push('相关规则来源：');
+      articles.slice(0, 5).forEach((item, index) => {
+        lines.push((index + 1) + '. ' + (item.title || item.source || '相关规则'));
+        if (item.pkulawUrl) lines.push('原文链接：' + item.pkulawUrl);
+      });
+      lines.push('');
+    }
+
+    lines.push('材料提醒：请核对劳动合同、工资流水、社保记录和离职材料。');
+    lines.push('说明：本摘要仅用于记录核对，不作为个案判断。');
+
+    wx.setClipboardData({
+      data: lines.join('\n'),
+      success: () => toast('测算摘要已复制', 'success'),
+      fail: () => toast('复制失败，请稍后重试')
+    });
+  },
+
+  // 重新测算
   restart() {
     this.setData({
       currentIndex: 0,
@@ -225,5 +310,18 @@ Page({
       if (num < question.min || num > question.max) return false;
     }
     return true;
+  },
+
+  copyLawLink(e) {
+    const url = e.currentTarget.dataset.url;
+    if (!url) {
+      toast('暂无原文链接');
+      return;
+    }
+    wx.setClipboardData({
+      data: url,
+      success: () => toast('原文链接已复制', 'success'),
+      fail: () => toast('复制失败，请稍后重试')
+    });
   }
 });

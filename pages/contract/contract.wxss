@@ -9,20 +9,20 @@
   line-height: 1;
 }
 
-/* 免责声明 */
-.disclaimer {
-  padding: 16rpx;
-  background: #FFF8E1;
-  border-radius: 12rpx;
+.intro-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F0F6FF 100%);
+  border-color: #D6E5F7;
 }
 
 /* 文本输入区 */
 .textarea {
   width: 100%;
-  min-height: 300rpx;
+  height: 360rpx;
+  min-height: 360rpx;
+  max-height: 360rpx;
   padding: 20rpx 24rpx;
   border: 1rpx solid #E5E5E5;
-  border-radius: 12rpx;
+  border-radius: 16rpx;
   font-size: 30rpx;
   background: #fff;
   box-sizing: border-box;
@@ -38,15 +38,23 @@
   width: 24rpx;
 }
 
-/* 检测按钮 */
+/* 自查按钮 */
 .analyze-btn {
+  width: 100%;
+}
+
+.secondary-action {
   width: 100%;
 }
 
 /* loading */
 .loading-card {
-  flex-direction: column;
-  padding: 64rpx 32rpx;
+  padding: 36rpx 32rpx;
+}
+
+.loading-head {
+  display: flex;
+  align-items: center;
 }
 
 .loading-spinner {
@@ -56,6 +64,61 @@
   border-top-color: #2864AC;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.loading-copy {
+  margin-left: 24rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.analyze-progress {
+  width: 100%;
+  height: 14rpx;
+  background: #E8EEF7;
+  border-radius: 999rpx;
+  overflow: hidden;
+}
+
+.analyze-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2864AC 0%, #35A06C 100%);
+  border-radius: 999rpx;
+  transition: width 0.35s ease;
+}
+
+.analyze-steps {
+  display: flex;
+  flex-direction: column;
+}
+
+.analyze-step {
+  display: flex;
+  align-items: center;
+  padding: 10rpx 0;
+  color: #9CA3AF;
+}
+
+.analyze-step.active {
+  color: #2864AC;
+}
+
+.step-dot {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  border: 1rpx solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+}
+
+.step-text {
+  font-size: 26rpx;
 }
 
 @keyframes spin {
@@ -65,6 +128,19 @@
 /* 摘要卡片 */
 .summary-card {
   padding: 32rpx;
+  scroll-margin-top: 24rpx;
+}
+
+.complete-badge {
+  display: inline-flex;
+  align-items: center;
+  color: #15935B;
+  background: #EAF8F0;
+  border: 1rpx solid #BDE7CE;
+  border-radius: 999rpx;
+  padding: 8rpx 18rpx;
+  font-size: 24rpx;
+  margin-bottom: 16rpx;
 }
 
 .summary-text {
@@ -117,9 +193,9 @@
 }
 
 .issue-suggestion {
-  padding: 16rpx;
-  background: #F5F5F5;
-  border-radius: 12rpx;
+  padding: 20rpx;
+  background: #F6F8FB;
+  border-radius: 16rpx;
 }
 
 /* 法条 */
@@ -139,6 +215,13 @@
   font-weight: 600;
 }
 
+.law-meta {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+}
+
 .law-title {
   display: block;
 }
@@ -148,8 +231,28 @@
   line-height: 1.6;
 }
 
+.law-link-btn {
+  margin-top: 16rpx;
+  margin-left: 0;
+  padding: 0 20rpx;
+  height: 56rpx;
+  line-height: 54rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10rpx;
+  border: 1rpx solid #2864AC;
+  background: #FFFFFF;
+  color: #2864AC;
+  font-size: 24rpx;
+}
+
+.law-link-btn::after {
+  border: none;
+}
+
 /* 协商卡片 */
 .negotiate-card {
-  background: #E8F1FA;
-  border-color: #B5C8D8;
+  background: #F7FBF9;
+  border-color: #CFE8DA;
 }

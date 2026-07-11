@@ -1,5 +1,5 @@
 // 记工时页：按月记录每日工时与工资
-// 功能：日历视图 / 法定差额 / 周末加班费 / 白班夜班时薪 / 周末和超时提醒
+// 功能：日历视图 / 工资参考差额 / 白班夜班时薪 / 周末和超时提醒
 const { apiRequest, toast } = require('../../utils/api');
 
 const app = getApp();
@@ -30,6 +30,8 @@ const HOLIDAYS_2026 = [
   '2026-10-06', '2026-10-07'
 ];
 
+const OVERTIME_REMINDER_SHOWN_KEY = 'workhours_overtime_reminder_shown';
+
 Page({
   data: {
     // 字体缩放样式类
@@ -50,28 +52,25 @@ Page({
       hours: '0',
       wage: '0.00',
       overtimeHours: '0',
-      overtimePay: '0.00'
+      overtimePremium: '0.00'
     },
-    // 法定差额（工时）
-    diff: {
-      standard: STANDARD_MONTHLY_HOURS,
-      actual: 0,
-      diff: 0,
-      diffLabel: '0',
-      isOvertime: false
-    },
-    // 三层工资模型
+    // 工资参考模型
     wageModel: {
-      actualWage: '0.00',       // 第一层：工厂实发工资
-      statutoryWage: '0.00',    // 第二层：法定应得工资
-      wageDiff: '0.00',         // 第三层：差额工资
-      diffLabel: '+0.00',
+      actualWage: '0.00',
+      statutoryWage: '0.00',
+      wageDiff: '0.00',
+      diffLabel: '0.00',
       isPositive: false,
-      hourlyRate: '0.00'
+      hourlyRate: '0.00',
+      formula: '参考差额 = 参考应得 - 普通工资',
+      overtimeNote: '记录工时后会按工作日、周末和节假日倍率估算。'
     },
     // 弹窗状态
     showModal: false,
+    modalMode: 'add',
+    editingDate: '',
     submitting: false,
+    deleting: false,
     loading: false,
     // 班次选项
     shiftOptions: SHIFT_OPTIONS,
@@ -80,8 +79,7 @@ Page({
       date: '',
       hours: '',
       shift: '白班',
-      rate: '',
-      nightRate: ''
+      rate: ''
     },
     // 默认白班/夜班时薪（从设置读取）
     defaultDayRate: '',
@@ -90,7 +88,8 @@ Page({
     reminders: {
       weekend: true,    // 周末记工时提醒
       overtime: true    // 超 8 小时提醒
-    }
+    },
+    _storageCache: {}
   },
 
   onLoad() {
@@ -98,6 +97,8 @@ Page({
     this._setMonth(now.getFullYear(), now.getMonth() + 1);
     this._applyFontScale();
     this._loadRateSettings();
+    // Request sequence counter: only the latest _loadRecords response is applied.
+    this._loadSeq = 0;
   },
 
   onShow() {
@@ -105,15 +106,27 @@ Page({
       this._loadRecords();
     }
     this._applyFontScale();
-    this._loadRateSettings();
+    this._loadRateSettings(true);
   },
 
-  // 加载白班/夜班时薪设置
-  _loadRateSettings() {
-    const dayRate = wx.getStorageSync('yunke_day_rate') || '';
-    const nightRate = wx.getStorageSync('yunke_night_rate') || '';
-    const weekendReminder = wx.getStorageSync('yunke_reminder_weekend');
-    const overtimeReminder = wx.getStorageSync('yunke_reminder_overtime');
+  _getStorage(key, defaultValue = '') {
+    if (this.data._storageCache[key] !== undefined) {
+      return this.data._storageCache[key];
+    }
+    const value = wx.getStorageSync(key) || defaultValue;
+    this.setData({ [`_storageCache.${key}`]: value });
+    return value;
+  },
+
+  // 加载白班/夜班时薪设置（统一使用 hourly_rate / night_rate 键名）
+  _loadRateSettings(forceRefresh = false) {
+    if (forceRefresh) {
+      this.setData({ _storageCache: {} });
+    }
+    const dayRate = this._getStorage('hourly_rate');
+    const nightRate = this._getStorage('night_rate');
+    const weekendReminder = this._getStorage('reminder_weekend', true);
+    const overtimeReminder = this._getStorage('reminder_overtime', true);
     this.setData({
       defaultDayRate: dayRate,
       defaultNightRate: nightRate,
@@ -197,10 +210,13 @@ Page({
 
   // 加载当月记录
   _loadRecords() {
-    if (this.data.loading) return;
+    // Use a sequence number so stale responses (from a previous month) are discarded.
+    const seq = ++this._loadSeq;
     this.setData({ loading: true });
     apiRequest('/workhours/month/' + this.data.currentMonth)
       .then(data => {
+        // Discard if a newer request has been initiated.
+        if (seq !== this._loadSeq) return;
         // Backend returns { records, summary }; fallback to array for safety
         let records = Array.isArray(data) ? data : (data && data.records) || [];
         records = records.map(r => this._formatRecord(r));
@@ -213,6 +229,7 @@ Page({
         this.setData({ records: records, loading: false });
       })
       .catch(err => {
+        if (seq !== this._loadSeq) return;
         this.setData({ loading: false });
         this._computeStats([]);
         this._buildCalendar(
@@ -230,6 +247,7 @@ Page({
     const rate = Number(r.rate) || 0;
     const w = r.wage != null ? Number(r.wage) : h * rate;
     return Object.assign({}, r, {
+      rate,
       wage: w.toFixed(2),
       displayDate: this._formatDate(r.date),
       shiftLabel: r.shift || '白班'
@@ -243,17 +261,13 @@ Page({
     return parseInt(parts[1], 10) + '月' + parseInt(parts[2], 10) + '日';
   },
 
-  // 计算统计数据 + 三层工资模型
+  // 计算统计数据和工资对比
   _computeStats(records) {
     let days = records.length;
     let totalHours = 0;
-    let actualWage = 0;  // 第一层：工厂实发工资
-
-    //用于计算法定应得工资
-    let weekdayNormalHours = 0;  // 工作日正常工时（每天最多8小时）
-    let weekdayOvertimeHours = 0;  // 工作日加班工时
-    let weekendHours = 0;  // 周末工时
-    let holidayHours = 0;  // 节假日工时
+    let ordinaryWage = 0;
+    let statutoryWage = 0;
+    let overtimeHours = 0;
 
     // 获取时薪（优先用白班时薪，若没有则用第一条记录的时薪）
     const dayRate = Number(this.data.defaultDayRate) || 0;
@@ -262,14 +276,10 @@ Page({
 
     records.forEach(r => {
       const h = Number(r.hours) || 0;
-      const rate = Number(r.rate) || 0;
+      const rate = this._getRecordRate(r, dayRate, nightRate, effectiveRate);
       totalHours += h;
-      actualWage += Number(r.wage) || 0;
-
-      //如果没有全局时薪，用第一条记录的时薪
-      if (!effectiveRate && rate) {
-        effectiveRate = rate;
-      }
+      ordinaryWage += h * rate;
+      if (!effectiveRate && rate) effectiveRate = rate;
 
       // 判断日期类型
       const date = new Date(r.date);
@@ -278,34 +288,24 @@ Page({
       const isHoliday = HOLIDAYS_2026.indexOf(r.date) !== -1;
 
       if (isHoliday) {
-        holidayHours += h;
+        statutoryWage += h * rate * OVERTIME_RATE.holiday;
+        overtimeHours += h;
       } else if (isWeekend) {
-        weekendHours += h;
+        statutoryWage += h * rate * OVERTIME_RATE.weekend;
+        overtimeHours += h;
       } else {
         // 工作日：区分正常工时和加班工时
-        if (h > 8) {
-          weekdayNormalHours += 8;
-          weekdayOvertimeHours += (h - 8);
-        } else {
-          weekdayNormalHours += h;
-        }
+        const regularHours = Math.min(h, 8);
+        const extraHours = Math.max(0, h - 8);
+        statutoryWage += regularHours * rate + extraHours * rate * OVERTIME_RATE.weekday;
+        overtimeHours += extraHours;
       }
     });
 
-    //第二层：法定标准应得工资
-    // 基本工资 = 时薪 × min(174, 工作日正常工时)
-    const statutoryBaseHours = Math.min(STANDARD_MONTHLY_HOURS, weekdayNormalHours);
-    const statutoryBaseWage = effectiveRate * statutoryBaseHours;
-
-    //法定加班费（包含基础1倍 + 额外倍率）
-    const weekdayOvertimePay = weekdayOvertimeHours * effectiveRate * 1.5;  // 工作日加班 150%
-    const weekendOvertimePay = weekendHours * effectiveRate * 2.0;  // 周末加班 200%
-    const holidayOvertimePay = holidayHours * effectiveRate * 3.0;  // 节假日加班 300%
-
-    const statutoryWage = statutoryBaseWage + weekdayOvertimePay + weekendOvertimePay + holidayOvertimePay;
-
-    // 第三层：法定差额工资
-    const wageDiff = statutoryWage - actualWage;
+    // 参考差额
+    const wageDiff = statutoryWage - ordinaryWage;
+    const displayGap = Math.max(0, wageDiff);
+    const overtimeLabel = overtimeHours % 1 === 0 ? String(overtimeHours) : overtimeHours.toFixed(1);
 
     // 格式化显示
     const hoursStr = totalHours % 1 === 0 ? String(totalHours) : totalHours.toFixed(1);
@@ -313,31 +313,33 @@ Page({
       stats: {
         days: days,
         hours: hoursStr,
-        wage: actualWage.toFixed(2),
-        overtimeHours: (weekdayOvertimeHours + weekendHours + holidayHours) % 1 === 0
-          ? String(weekdayOvertimeHours + weekendHours + holidayHours)
-          : (weekdayOvertimeHours + weekendHours + holidayHours).toFixed(1),
-        overtimePay: (weekdayOvertimePay + weekendOvertimePay + holidayOvertimePay).toFixed(2)
+        wage: ordinaryWage.toFixed(2),
+        overtimeHours: overtimeHours % 1 === 0 ? String(overtimeHours) : overtimeHours.toFixed(1),
+        overtimePremium: Math.max(0, wageDiff).toFixed(2)
       },
-      // 三层工资模型
+      // 工资参考模型
       wageModel: {
-        actualWage: actualWage.toFixed(2),          // 第一层：工厂实发工资
-        statutoryWage: statutoryWage.toFixed(2),    // 第二层：法定应得工资
-        wageDiff: wageDiff.toFixed(2),              // 第三层：差额工资
-        diffLabel: wageDiff >= 0 ? '+' + wageDiff.toFixed(2) : wageDiff.toFixed(2),
-        isPositive: wageDiff >= 0,                  // 差额为正表示工厂少发
-        hourlyRate: effectiveRate.toFixed(2)
-      },
-      // 保留原工时差额数据（用于日历等）
-      diff: {
-        standard: STANDARD_MONTHLY_HOURS,
-        actual: totalHours,
-        diff: Math.abs(totalHours - STANDARD_MONTHLY_HOURS),
-        diffLabel: (totalHours >= STANDARD_MONTHLY_HOURS ? '+' : '-')
-          + Math.abs(totalHours - STANDARD_MONTHLY_HOURS).toFixed(1) + 'h',
-        isOvertime: totalHours > STANDARD_MONTHLY_HOURS
+        actualWage: ordinaryWage.toFixed(2),
+        statutoryWage: statutoryWage.toFixed(2),
+        wageDiff: wageDiff.toFixed(2),
+        diffLabel: wageDiff > 0 ? '+' + wageDiff.toFixed(2) : wageDiff.toFixed(2),
+        isPositive: wageDiff > 0,
+        hourlyRate: effectiveRate.toFixed(2),
+        formula: '参考差额 = ¥' + statutoryWage.toFixed(2) + ' - ¥' + ordinaryWage.toFixed(2) + ' = ¥' + displayGap.toFixed(2),
+        overtimeNote: overtimeHours > 0
+          ? '已识别 ' + overtimeLabel + ' 小时加班；工作日超 8 小时按 1.5 倍，周末按 2 倍，节假日按 3 倍估算。'
+          : '本月暂未识别加班时长，参考应得与普通工资通常一致。'
       }
     });
+  },
+
+  _getRecordRate(record, dayRate, nightRate, fallbackRate) {
+    const explicitRate = Number(record.rate);
+    if (explicitRate > 0) return explicitRate;
+    const shift = record.shift || record.shiftLabel || '白班';
+    if (shift === '夜班' && nightRate > 0) return nightRate;
+    if (shift === '白班' && dayRate > 0) return dayRate;
+    return fallbackRate || dayRate || nightRate || 0;
   },
 
   // 切换视图模式
@@ -365,25 +367,52 @@ Page({
   // 点击日历某天 - 快速添加
   onDayTap(e) {
     const date = e.currentTarget.dataset.date;
-    const hasRecord = e.currentTarget.dataset.hasRecord;
-    if (hasRecord) return; // 已有记录，不操作
-    // 打开添加弹窗并预填日期
+    const hasRecord = e.currentTarget.dataset.hasRecord === true || e.currentTarget.dataset.hasRecord === 'true';
+    if (hasRecord) {
+      const record = this.data.records.find(item => item.date === date);
+      if (record) {
+        this._openEditModal(record);
+      }
+      return;
+    }
+    this._openAddModal(date);
+  },
+
+  _openAddModal(date) {
     const rate = this.data.defaultDayRate || '';
     // 重置提醒标记
     this._hasWeekendReminder = false;
     this._hasOvertimeReminder = false;
     this.setData({
       showModal: true,
+      modalMode: 'add',
+      editingDate: '',
       form: {
         date: date,
         hours: '',
         shift: '白班',
-        rate: rate,
-        nightRate: this.data.defaultNightRate || ''
+        rate: rate
       }
     });
     // 检查所选日期是否是周末
     this._checkWeekendReminder(date);
+  },
+
+  _openEditModal(record) {
+    if (!record) return;
+    this._hasWeekendReminder = false;
+    this._hasOvertimeReminder = false;
+    this.setData({
+      showModal: true,
+      modalMode: 'edit',
+      editingDate: record.date,
+      form: {
+        date: record.date,
+        hours: String(record.hours || ''),
+        shift: record.shiftLabel || record.shift || '白班',
+        rate: record.rate ? String(record.rate) : (this.data.defaultDayRate || '')
+      }
+    });
   },
 
   openAddModal() {
@@ -392,21 +421,13 @@ Page({
       today.getFullYear() + '-' +
       String(today.getMonth() + 1).padStart(2, '0') + '-' +
       String(today.getDate()).padStart(2, '0');
-    // 重置提醒标记
-    this._hasWeekendReminder = false;
-    this._hasOvertimeReminder = false;
-    this.setData({
-      showModal: true,
-      form: {
-        date: dateStr,
-        hours: '',
-        shift: '白班',
-        rate: this.data.defaultDayRate || '',
-        nightRate: this.data.defaultNightRate || ''
-      }
-    });
-    // 检查今天是否是周末
-    this._checkWeekendReminder(dateStr);
+    this._openAddModal(dateStr);
+  },
+
+  onRecordTap(e) {
+    const date = e.currentTarget.dataset.date;
+    const record = this.data.records.find(item => item.date === date);
+    this._openEditModal(record);
   },
 
   // 检查周末提醒（独立触发，不与超时提醒冲突）
@@ -420,10 +441,26 @@ Page({
       this._hasWeekendReminder = true;
       wx.showModal({
         title: '周末加班提醒',
-        content: '所选日期是周末，按加班费 200% 计算。',
+        content: '所选日期是周末，会按 200% 参考倍率估算。',
         showCancel: false,
         confirmText: '我知道了'
       });
+    }
+  },
+
+  _hasShownOvertimeReminder() {
+    try {
+      return wx.getStorageSync(OVERTIME_REMINDER_SHOWN_KEY) === true;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  _markOvertimeReminderShown() {
+    try {
+      wx.setStorageSync(OVERTIME_REMINDER_SHOWN_KEY, true);
+    } catch (err) {
+      // 本地存储失败时仍允许本次提醒，不影响记工时主流程。
     }
   },
 
@@ -432,23 +469,20 @@ Page({
     if (!this.data.reminders.overtime) return;
     const h = Number(hoursStr);
     if (isNaN(h)) return;
-    if (h > 8) {
-      if (this._hasOvertimeReminder) return; // 防止重复弹出
-      this._hasOvertimeReminder = true;
-      wx.showModal({
-        title: '工时超时提醒',
-        content: '今日工时超过 8 小时，超出部分按加班费计算（工作日 150%、周末 200%、法定节假日 300%）。',
-        showCancel: false,
-        confirmText: '我知道了'
-      });
-    } else {
-      // 工时降回 8 以下，重置标记，允许下次再提醒
-      this._hasOvertimeReminder = false;
-    }
+    if (h <= 8 || this._hasOvertimeReminder || this._hasShownOvertimeReminder()) return;
+
+    this._hasOvertimeReminder = true;
+    this._markOvertimeReminderShown();
+    wx.showModal({
+      title: '工时超时提醒',
+      content: '今日工时超过 8 小时，超出部分会按工作日、周末或法定节假日的参考倍率估算。',
+      showCancel: false,
+      confirmText: '我知道了'
+    });
   },
 
   closeAddModal() {
-    if (this.data.submitting) return;
+    if (this.data.submitting || this.data.deleting) return;
     this.setData({ showModal: false });
   },
 
@@ -470,7 +504,18 @@ Page({
   },
 
   onRateInput(e) {
-    this.setData({ 'form.rate': e.detail.value });
+    const val = e.detail.value;
+    this.setData({ 'form.rate': val });
+    // Save rate to storage based on shift type
+    if (this.data.form.shift === '白班') {
+      wx.setStorageSync('hourly_rate', val);
+    } else if (this.data.form.shift === '夜班') {
+      wx.setStorageSync('night_rate', val);
+    }
+    this.setData({
+      defaultDayRate: wx.getStorageSync('hourly_rate') || '',
+      defaultNightRate: wx.getStorageSync('night_rate') || ''
+    });
   },
 
   // 班次切换 - 自动填充对应时薪
@@ -501,10 +546,12 @@ Page({
     }
 
     const h = Number(hours);
-    if (!hours || isNaN(h) || h < 1 || h > 24) {
-      toast('工时请输入 1-24 之间的数字');
+    if (!hours || isNaN(h) || h < 0.5 || h > 24) {
+      toast('工时请输入 0.5-24 之间的数字（支持半小时）');
       return;
     }
+    // Round to nearest 0.5
+    const roundedH = Math.round(h * 2) / 2;
 
     const r = Number(rate);
     if (!rate || isNaN(r) || r < 1 || r > 500) {
@@ -512,22 +559,22 @@ Page({
       return;
     }
 
-    // 计算工资金额（含加班费）
-    const wage = this._calculateWage(date, h, r);
+    // 记录普通时薪工资；参考应得和差额在月度统计中按规则单独计算。
+    const wage = this._calculateWage(date, roundedH, r);
 
     this.setData({ submitting: true });
     apiRequest('/workhours', {
       method: 'POST',
       data: {
         date: date,
-        hours: h,
+        hours: roundedH,
         shift: shift,
         rate: r,
         wage: wage
       }
     })
       .then(() => {
-        this.setData({ submitting: false, showModal: false });
+        this.setData({ submitting: false, showModal: false, modalMode: 'add', editingDate: '' });
         toast('保存成功', 'success');
         this._loadRecords();
       })
@@ -537,25 +584,37 @@ Page({
       });
   },
 
-  // 计算工资（含加班费）
-  _calculateWage(dateStr, hours, rate) {
-    const date = new Date(dateStr);
-    const weekday = date.getDay();
-    const isWeekend = weekday === 0 || weekday === 6;
-    const isHoliday = HOLIDAYS_2026.indexOf(dateStr) !== -1;
+  deleteRecord() {
+    const recordDate = this.data.editingDate || this.data.form.date;
+    if (!recordDate || this.data.modalMode !== 'edit') return;
 
-    let wage = 0;
-    if (hours <= 8) {
-      wage = hours * rate;
-    } else {
-      // 前 8 小时正常工资
-      wage = 8 * rate;
-      const overtime = hours - 8;
-      let multiplier = OVERTIME_RATE.weekday;
-      if (isHoliday) multiplier = OVERTIME_RATE.holiday;
-      else if (isWeekend) multiplier = OVERTIME_RATE.weekend;
-      wage += overtime * rate * multiplier;
-    }
-    return Number(wage.toFixed(2));
+    wx.showModal({
+      title: '删除这条记录？',
+      content: '删除后，本月工时和工资统计会同步更新。',
+      confirmText: '删除',
+      confirmColor: '#D93025',
+      success: res => {
+        if (!res.confirm) return;
+        this.setData({ deleting: true });
+        apiRequest('/workhours', {
+          method: 'DELETE',
+          data: { recordDate }
+        })
+          .then(() => {
+            this.setData({ deleting: false, showModal: false, modalMode: 'add', editingDate: '' });
+            toast('已删除', 'success');
+            this._loadRecords();
+          })
+          .catch(err => {
+            this.setData({ deleting: false });
+            toast(err.message || '删除失败');
+          });
+      }
+    });
+  },
+
+  // 计算普通时薪工资
+  _calculateWage(dateStr, hours, rate) {
+    return Number((hours * rate).toFixed(2));
   }
 });

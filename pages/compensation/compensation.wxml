@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container {{fontScaleClass}}">
   <!-- 加载中 -->
   <view class="card flex-center" wx:if="{{loading}}">
     <text class="hint">问题加载中...</text>
@@ -45,53 +45,54 @@
       <button class="btn-outline flex-1" bindtap="prev" disabled="{{currentIndex === 0}}">上一题</button>
       <view class="action-gap"></view>
       <button class="btn-primary flex-1" bindtap="next" disabled="{{!canNext}}" loading="{{submitting}}">
-        {{isLastQuestion ? '提交计算' : '下一题'}}
+        {{isLastQuestion ? '生成参考结果' : '下一题'}}
       </button>
     </view>
   </block>
 
   <!-- 结果展示 -->
   <block wx:else>
-    <!-- 补偿金额 -->
-    <view class="card result-amount-card">
-      <text class="hint">预估补偿金额</text>
+    <!-- 参考金额 -->
+    <view id="compensationResult" class="card result-amount-card">
+      <text class="hint">参考测算金额</text>
       <view class="amount-wrap mt-8">
         <text class="amount-symbol">¥</text>
         <text class="amount-value">{{result.totalAmount || 0}}</text>
       </view>
-      <text class="hint mt-8">* 估算结果仅供参考，具体金额以实际情况为准</text>
+      <text class="hint mt-8">本结果根据你填写的信息测算，仅供记录核对参考，不作为个案判断。</text>
     </view>
 
     <!-- 明细列表 -->
     <view class="card" wx:if="{{result.items && result.items.length}}">
-      <text class="title">补偿明细</text>
+      <text class="title">测算明细</text>
       <view class="detail-item flex-between mt-16" wx:for="{{result.items}}" wx:key="name">
         <text class="subtitle">{{item.name}}</text>
         <text class="detail-amount">¥{{item.amount}}</text>
       </view>
     </view>
 
-    <!-- 法条依据 -->
+    <!-- 相关规则 -->
     <view class="card" wx:if="{{result.legalArticles && result.legalArticles.length}}">
-      <text class="title">法条依据</text>
+      <text class="title">相关规则</text>
       <view class="mt-16" wx:for="{{result.legalArticles}}" wx:key="source">
         <view class="law-item">
-          <text class="law-source">{{item.source}}</text>
+          <text class="law-source">{{item.pkulawUrl ? '已匹配原文链接' : '公开规则信息'}}</text>
+          <text class="law-meta" wx:if="{{item.source}}">{{item.source}}</text>
           <text class="law-title subtitle mt-8" wx:if="{{item.title}}">{{item.title}}</text>
           <text class="law-text hint mt-8">{{item.originalText}}</text>
+          <button class="law-link-btn" wx:if="{{item.pkulawUrl}}" data-url="{{item.pkulawUrl}}" catchtap="copyLawLink">复制原文链接</button>
         </view>
       </view>
     </view>
 
-    <!-- 协商优先提示 -->
     <view class="card negotiate-card">
-      <text class="title">协商优先</text>
-      <text class="subtitle mt-8">建议优先与用人单位协商沟通。多数劳动争议可通过协商、调解等方式解决，无需进入仲裁或诉讼程序。</text>
+      <text class="title">使用说明</text>
+      <text class="subtitle mt-8">请先核对劳动合同、工资流水、社保记录和离职材料。具体争议处理请咨询 12333、劳动监察、工会或持证律师。</text>
     </view>
 
     <!-- 证据清单 -->
     <view class="card">
-      <text class="title">建议保全的证据</text>
+      <text class="title">材料清单</text>
       <view class="evidence-list mt-16">
         <view class="evidence-item" wx:for="{{evidenceList}}" wx:key="*this">
           <text class="evidence-dot">•</text>
@@ -102,7 +103,7 @@
 
     <!-- 处理流程 -->
     <view class="card">
-      <text class="title">处理流程</text>
+      <text class="title">核对步骤</text>
       <view class="process-list mt-16">
         <view class="process-item" wx:for="{{processSteps}}" wx:key="*this">
           <view class="process-num">{{index + 1}}</view>
@@ -113,9 +114,10 @@
 
     <!-- 操作按钮 -->
     <view class="flex action-bar mt-16">
-      <button class="btn-outline flex-1" bindtap="saveRecord" loading="{{savingRecord}}">保存检测记录</button>
+      <button class="btn-outline flex-1" bindtap="copySummary">复制测算摘要</button>
       <view class="action-gap"></view>
-      <button class="btn-primary flex-1" bindtap="restart">重新估算</button>
+      <button class="btn-primary flex-1" bindtap="restart">重新测算</button>
     </view>
+    <button class="btn-outline secondary-action mt-16" bindtap="saveRecord" loading="{{savingRecord}}">保存到我的记录</button>
   </block>
 </view>

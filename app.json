@@ -4,10 +4,10 @@
     "pages/workhours/workhours",
     "pages/salary/salary",
     "pages/profile/profile",
+    "pages/records/records",
     "pages/compensation/compensation",
     "pages/dispute/dispute",
     "pages/contract/contract",
-    "pages/legal/legal",
     "pages/login/login"
   ],
   "window": {
@@ -37,7 +37,7 @@
       },
       {
         "pagePath": "pages/salary/salary",
-        "text": "工资管理",
+        "text": "工资核对",
         "iconPath": "images/tabbar/salary.png",
         "selectedIconPath": "images/tabbar/salary-active.png"
       },

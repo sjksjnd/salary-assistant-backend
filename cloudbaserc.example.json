@@ -1,0 +1,28 @@
+{
+  "envId": "cloud1-d5gejhgdz27493ea6",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    { "name": "auth" },
+    { "name": "users" },
+    { "name": "workhours" },
+    { "name": "salary" },
+    {
+      "name": "legal",
+      "timeout": 20,
+      "envVariables": {
+        "PKULAW_MCP_URL": "https://apim-gateway.pkulaw.com/mcp-law-search-service",
+        "PKULAW_MCP_TOKEN": "",
+        "PKULAW_MCP_TIMEOUT": "15000",
+        "PKULAW_TOOL_SEARCH": "search_article",
+        "PKULAW_TOOL_GET": "get_article",
+        "PKULAW_CACHE_TTL": "3600",
+        "PKULAW_USER_DAILY_LIMIT": "20",
+        "PKULAW_GLOBAL_DAILY_LIMIT": "500"
+      }
+    },
+    { "name": "contract", "timeout": 20 },
+    { "name": "compensation", "timeout": 20 },
+    { "name": "config" },
+    { "name": "seedData" }
+  ]
+}

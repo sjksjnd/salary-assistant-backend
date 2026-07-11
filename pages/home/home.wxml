@@ -1,35 +1,96 @@
 <view class="page pt-6 {{fontScaleClass}}">
   <view class="container">
-    <!-- 顶部欢迎语 -->
-    <view class="header flex-col flex-center mb-24">
-      <text class="title-lg">工友守护·薪工记</text>
-      <text class="subtitle mt-8">守护你的每一分辛苦钱</text>
+    <view class="header card mb-24">
+      <text class="eyebrow">工友守护·薪工记</text>
+      <text class="title-lg mt-8">今天工时记了吗？</text>
+      <text class="subtitle mt-8">每天记一笔，月底核对工资、扣款和到账金额更清楚。</text>
     </view>
 
-    <!-- 功能卡片 2×2 网格 -->
-    <view class="grid">
-      <view
-        class="grid-item card flex-col"
-        wx:for="{{features}}"
-        wx:key="key"
-        data-path="{{item.path}}"
-        data-tab="{{item.isTab}}"
-        bindtap="onTapFeature"
-        hover-class="card-hover"
-        hover-stay-time="100"
-      >
-        <view class="icon-box" style="background: {{item.gradient}};">
-          <text class="icon-emoji">{{item.icon}}</text>
+    <view class="dashboard-card card mb-24">
+      <view class="flex-between">
+        <view>
+          <text class="section-label">{{dashboard.todayLogged ? '今日已记' : '今日待记'}}</text>
+          <text class="dashboard-title mt-8">{{dashboard.hint}}</text>
         </view>
-        <text class="feature-title mt-16">{{item.title}}</text>
-        <text class="feature-sub mt-8">{{item.subtitle}}</text>
+        <view class="dashboard-state {{dashboard.todayLogged ? 'done' : 'todo'}}">
+          {{dashboard.todayLogged ? '✓' : '记'}}
+        </view>
+      </view>
+      <view class="dashboard-grid mt-20">
+        <view class="dashboard-metric">
+          <text class="metric-value">{{dashboard.monthDays}}</text>
+          <text class="metric-label">本月记工天数</text>
+        </view>
+        <view class="dashboard-metric">
+          <text class="metric-value">{{dashboard.monthHours}}</text>
+          <text class="metric-label">本月工时(h)</text>
+        </view>
       </view>
     </view>
 
-    <!-- 底部版本说明 -->
-    <view class="footer flex-col flex-center mt-24">
-      <text class="hint">版本 v1.0.0</text>
-      <text class="hint mt-8">本工具仅供参考，不构成法律意见</text>
+    <view
+      class="primary-entry card mb-24"
+      data-path="{{primaryAction.path}}"
+      data-tab="{{primaryAction.isTab}}"
+      bindtap="onTapEntry"
+      hover-class="card-hover"
+      hover-stay-time="100"
+    >
+      <view class="primary-copy">
+        <text class="section-label">建议先做</text>
+        <text class="primary-title mt-8">{{primaryAction.title}}</text>
+        <text class="primary-sub mt-8">{{primaryAction.subtitle}}</text>
+      </view>
+      <view class="primary-mark">记</view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">常用自查</text>
+      <text class="section-desc">合同、金额和材料先做核对，重要结果会保存在记录里</text>
+    </view>
+
+    <view class="tool-list mb-24">
+      <view
+        class="tool-card card"
+        wx:for="{{tools}}"
+        wx:key="key"
+        data-path="{{item.path}}"
+        data-tab="{{item.isTab}}"
+        bindtap="onTapEntry"
+        hover-class="card-hover"
+        hover-stay-time="100"
+      >
+        <view class="tool-tag">{{item.tag}}</view>
+        <view class="tool-copy">
+          <text class="feature-title">{{item.title}}</text>
+          <text class="feature-sub mt-6">{{item.subtitle}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">账本和记录</text>
+    </view>
+
+    <view class="quick-grid mb-24">
+      <view
+        class="quick-item card"
+        wx:for="{{quickLinks}}"
+        wx:key="key"
+        data-path="{{item.path}}"
+        data-tab="{{item.isTab}}"
+        bindtap="onTapEntry"
+        hover-class="card-hover"
+        hover-stay-time="100"
+      >
+        <text class="quick-title">{{item.title}}</text>
+        <text class="quick-sub mt-6">{{item.subtitle}}</text>
+      </view>
+    </view>
+
+    <view class="boundary-card card">
+      <text class="boundary-title">服务边界</text>
+      <text class="boundary-text mt-8">本工具用于记录、测算和常见规则自查，内容仅供核对参考，不替代专业机构意见，也不代办任何争议处理事项。</text>
     </view>
   </view>
 </view>

@@ -1,21 +1,21 @@
-/* 争议解决页样式 */
+/* 材料整理页样式 */
 
-/* 协商优先提示卡片 */
+/* 资料整理提示卡片 */
 .consult-tip {
-  background: #FFF8E1;
-  border-color: #FFE082;
+  background: #F7FBF9;
+  border-color: #CFE8DA;
 }
 
 .tip-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #E65100;
+  color: var(--success);
   margin-bottom: 8rpx;
 }
 
 .tip-desc {
   font-size: 28rpx;
-  color: #6D4C41;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -45,11 +45,13 @@
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: var(--primary-light);
+  background: var(--primary);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28rpx;
+  font-size: 26rpx;
+  font-weight: 700;
 }
 
 .timeline-line {
@@ -88,6 +90,7 @@
 
 .timeline-desc {
   line-height: 1.6;
+  white-space: pre-wrap;
 }
 
 .call-btn {
@@ -109,151 +112,47 @@
   white-space: pre-wrap;
 }
 
-/* 文书模板 */
-.template-item {
+.material-item {
   display: flex;
   padding: 24rpx 0;
   border-bottom: 1rpx solid var(--border);
+  align-items: flex-start;
+}
+
+.material-item:first-child {
+  padding-top: 0;
+}
+
+.material-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.material-index {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
   align-items: center;
-}
-
-.template-item:first-child {
-  padding-top: 0;
-}
-
-.template-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.template-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.template-intro {
-  line-height: 1.5;
-}
-
-.template-price {
-  color: var(--danger);
-  font-size: 28rpx;
-  font-weight: 600;
-}
-
-.template-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  margin-left: 24rpx;
-  min-width: 160rpx;
-}
-
-.template-btn {
-  font-size: 26rpx;
-  padding: 12rpx 24rpx;
-  border-radius: 32rpx;
-  text-align: center;
-}
-
-/* 法律依据 */
-.loading-hint {
-  text-align: center;
-  padding: 32rpx 0;
-}
-
-.article-item {
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid var(--border);
-}
-
-.article-item:first-child {
-  padding-top: 0;
-}
-
-.article-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.article-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.article-text {
-  font-size: 26rpx;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-/* 免责声明 */
-.disclaimer {
-  text-align: center;
+  justify-content: center;
   font-size: 24rpx;
-  color: var(--text-tertiary);
-  padding: 24rpx 32rpx 48rpx;
-  line-height: 1.6;
+  font-weight: 700;
+  margin-right: 20rpx;
+  flex-shrink: 0;
 }
 
-/* 模板详情弹窗 */
-.modal-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
+.material-info {
+  flex: 1;
 }
 
-.modal-content {
-  width: 100%;
-  background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  padding: 32rpx;
-  border-bottom: 1rpx solid var(--border);
-}
-
-.modal-close {
-  font-size: 40rpx;
-  color: var(--text-tertiary);
-  padding: 0 8rpx;
-  line-height: 1;
-}
-
-.modal-body {
-  padding: 32rpx;
-  max-height: 70vh;
-  box-sizing: border-box;
-}
-
-.template-price-row {
-  display: flex;
-  align-items: baseline;
-}
-
-.desensitize-hint {
-  margin-left: 12rpx;
-}
-
-.template-full-text {
-  font-size: 26rpx;
+.material-title {
+  font-size: 30rpx;
+  font-weight: 600;
   color: var(--text-primary);
-  line-height: 1.7;
-  white-space: pre-wrap;
-  background: #F9F9F9;
-  padding: 24rpx;
-  border-radius: 12rpx;
+}
+
+.material-intro {
+  line-height: 1.5;
 }

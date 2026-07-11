@@ -1,12 +1,11 @@
 // pages/profile/profile.js
-const { toast } = require('../../utils/api');
+const { toast, apiRequest } = require('../../utils/api');
 const auth = require('../../utils/auth');
 const storage = require('../../utils/storage');
 
 const app = getApp();
 
-// 字体缩放对应的页面 class
-function _fontScaleClass(scale) {
+function fontScaleClass(scale) {
   switch (scale) {
     case 'large': return 'font-scale-large';
     case 'extra-large': return 'font-scale-extra-large';
@@ -15,22 +14,23 @@ function _fontScaleClass(scale) {
   }
 }
 
+function formatBackupDate(date) {
+  const pad = n => String(n).padStart(2, '0');
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate())
+  ].join('-') + '_' + [pad(date.getHours()), pad(date.getMinutes())].join('-');
+}
+
 Page({
   data: {
     isLoggedIn: false,
     userInfo: null,
-    level: 'V1',
-    points: 0,
-    // 设置面板展开
     settingsExpanded: false,
-    // 字体大小
     fontScale: 'medium',
     fontScaleClass: '',
-    // 时薪
-    hourlyRate: '',
-    // 默认班次
     defaultShift: 'morning',
-    // 提醒
     notifyEnabled: false,
     notifyTime: '09:00'
   },
@@ -41,244 +41,332 @@ Page({
 
   onShow() {
     this._refreshLoginState();
+    if (app.isLoggedIn()) {
+      this._fetchRemoteSettings();
+    }
   },
 
-  // 从本地存储载入偏好设置
   _loadSettings() {
     const fontScale = storage.get('font_scale', 'medium') || 'medium';
-    const hourlyRate = storage.get('hourly_rate', '');
     const defaultShift = storage.get('default_shift', 'morning');
     const notifyEnabled = storage.get('notify_enabled', false);
     const notifyTime = storage.get('notify_time', '09:00');
-    // 同步到 globalData
     app.globalData.fontScale = fontScale;
     this.setData({
-      fontScale: fontScale,
-      fontScaleClass: _fontScaleClass(fontScale),
-      hourlyRate: hourlyRate,
-      defaultShift: defaultShift,
-      notifyEnabled: notifyEnabled,
-      notifyTime: notifyTime
+      fontScale,
+      fontScaleClass: fontScaleClass(fontScale),
+      defaultShift,
+      notifyEnabled,
+      notifyTime
     });
   },
 
-  // 刷新登录态
+  _fetchRemoteSettings() {
+    apiRequest('/users/settings', { method: 'GET' })
+      .then(data => {
+        if (!data) return;
+        const updates = {};
+        if (data.fontScale) {
+          updates.fontScale = data.fontScale;
+          updates.fontScaleClass = fontScaleClass(data.fontScale);
+          app.globalData.fontScale = data.fontScale;
+          storage.set('font_scale', data.fontScale);
+        }
+        const remoteNotifyEnabled = data.notifyEnabled !== undefined ? data.notifyEnabled : data.reminderEnabled;
+        const remoteNotifyTime = data.notifyTime || data.reminderTime;
+        if (remoteNotifyEnabled !== undefined) {
+          updates.notifyEnabled = !!remoteNotifyEnabled;
+          storage.set('notify_enabled', !!remoteNotifyEnabled);
+        }
+        if (remoteNotifyTime) {
+          updates.notifyTime = remoteNotifyTime;
+          storage.set('notify_time', remoteNotifyTime);
+        }
+        if (Object.keys(updates).length > 0) {
+          this.setData(updates);
+        }
+      })
+      .catch(() => {});
+  },
+
+  _syncSettingToBackend(key, value) {
+    if (!app.isLoggedIn()) return;
+    const remoteKeyMap = {
+      notifyEnabled: 'reminderEnabled',
+      notifyTime: 'reminderTime'
+    };
+    const remoteKey = remoteKeyMap[key] || key;
+    apiRequest('/users/settings', {
+      method: 'PUT',
+      data: { [remoteKey]: value }
+    }).catch(() => {});
+  },
+
   _refreshLoginState() {
     const userInfo = app.globalData.userInfo;
-    const isLoggedIn = app.isLoggedIn();
     this.setData({
-      isLoggedIn: isLoggedIn,
-      userInfo: userInfo
+      isLoggedIn: app.isLoggedIn(),
+      userInfo
     });
   },
 
-  // 未登录时跳转登录页
-  goLogin() {
-    if (this.data.isLoggedIn) return;
-    wx.navigateTo({
-      url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/profile/profile')
+  onUserCardTap() {
+    if (!this.data.isLoggedIn) {
+      wx.navigateTo({
+        url: '/pages/login/login?redirect=' + encodeURIComponent('/pages/profile/profile')
+      });
+      return;
+    }
+    wx.showActionSheet({
+      itemList: ['更换头像', '修改昵称'],
+      success: res => {
+        if (res.tapIndex === 0) this.editAvatar();
+        if (res.tapIndex === 1) this.editNickname();
+      }
     });
   },
 
-  // 跳转到检测记录
+  editAvatar() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      sizeType: ['compressed'],
+      success: res => {
+        const tempFilePath = res.tempFiles && res.tempFiles[0] && res.tempFiles[0].tempFilePath;
+        if (tempFilePath) this._uploadAvatarToCloud(tempFilePath);
+      }
+    });
+  },
+
+  _uploadAvatarToCloud(tempFilePath) {
+    wx.showLoading({ title: '上传中...' });
+    const cloudReady = app && app._initCloud ? app._initCloud() : false;
+    if (!cloudReady) {
+      wx.hideLoading();
+      toast('头像上传准备失败，请稍后重试');
+      return;
+    }
+
+    const cloudPath = 'avatars/' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) + '.jpg';
+    wx.cloud.uploadFile({
+      cloudPath,
+      filePath: tempFilePath,
+      success: uploadRes => {
+        wx.cloud.getTempFileURL({
+          fileList: [uploadRes.fileID],
+          success: urlRes => {
+            const file = urlRes.fileList && urlRes.fileList[0];
+            this._sendAvatarUrl((file && file.tempFileURL) || uploadRes.fileID);
+          },
+          fail: () => this._sendAvatarUrl(uploadRes.fileID)
+        });
+      },
+      fail: () => {
+        wx.hideLoading();
+        toast('头像上传失败，请稍后重试');
+      }
+    });
+  },
+
+  _sendAvatarUrl(avatarUrl) {
+    apiRequest('/auth/avatar', {
+      method: 'POST',
+      data: { avatarUrl }
+    })
+      .then(data => {
+        wx.hideLoading();
+        const userInfo = Object.assign({}, this.data.userInfo, {
+          avatarUrl: (data && data.avatarUrl) || avatarUrl
+        });
+        this.setData({ userInfo });
+        app.globalData.userInfo = userInfo;
+        wx.setStorageSync('worker_law_user', userInfo);
+        toast('头像已更新', 'success');
+      })
+      .catch(err => {
+        wx.hideLoading();
+        toast(err.message || '头像保存失败');
+      });
+  },
+
+  editNickname() {
+    wx.showModal({
+      title: '修改昵称',
+      editable: true,
+      placeholderText: '请输入新昵称',
+      content: this.data.userInfo ? this.data.userInfo.nickname || '' : '',
+      success: res => {
+        if (!res.confirm) return;
+        const nickname = (res.content || '').trim();
+        if (!nickname) {
+          toast('昵称不能为空');
+          return;
+        }
+        if (nickname.length > 20) {
+          toast('昵称最多20个字');
+          return;
+        }
+        this._updateNickname(nickname);
+      }
+    });
+  },
+
+  _updateNickname(nickname) {
+    apiRequest('/auth/profile', {
+      method: 'PUT',
+      data: { nickname }
+    })
+      .then(() => {
+        const userInfo = Object.assign({}, this.data.userInfo, { nickname });
+        this.setData({ userInfo });
+        app.globalData.userInfo = userInfo;
+        wx.setStorageSync('worker_law_user', userInfo);
+        toast('昵称已更新', 'success');
+      })
+      .catch(err => toast(err.message || '修改失败'));
+  },
+
   goContractRecords() {
     if (!app.requireLogin('/pages/profile/profile')) return;
-    wx.navigateTo({ url: '/pages/contract/contract' });
+    wx.navigateTo({ url: '/pages/records/records' });
   },
 
-  // 跳转到工资账单
   goSalaryRecords() {
     if (!app.requireLogin('/pages/profile/profile')) return;
-    wx.navigateTo({ url: '/pages/salary/salary' });
+    wx.switchTab({ url: '/pages/salary/salary' });
   },
 
-  // 展开 / 收起设置
   toggleSettings() {
     this.setData({ settingsExpanded: !this.data.settingsExpanded });
   },
 
-  // 修改字体大小（即时生效）
   onFontScaleChange(e) {
     const scale = e.currentTarget.dataset.scale;
     app.globalData.fontScale = scale;
     storage.set('font_scale', scale);
     this.setData({
       fontScale: scale,
-      fontScaleClass: _fontScaleClass(scale)
+      fontScaleClass: fontScaleClass(scale)
     });
+    this._syncSettingToBackend('fontScale', scale);
     toast('字体大小已更新', 'success');
   },
 
-  // 时薪输入（限制 1-500）
-  onHourlyRateInput(e) {
-    let val = e.detail.value || '';
-    // 仅保留数字
-    val = val.replace(/[^\d]/g, '');
-    if (val !== '') {
-      const num = Number(val);
-      if (num > 500) val = '500';
-      if (num < 1 && val.length > 1) val = '1';
-    }
-    this.setData({ hourlyRate: val });
-    storage.set('hourly_rate', val);
-  },
-
-  // 切换默认班次
   onShiftChange(e) {
     const shift = e.currentTarget.dataset.shift;
     this.setData({ defaultShift: shift });
     storage.set('default_shift', shift);
   },
 
-  // 提醒开关
   onNotifyChange(e) {
     const enabled = e.detail.value;
     this.setData({ notifyEnabled: enabled });
     storage.set('notify_enabled', enabled);
+    this._syncSettingToBackend('notifyEnabled', enabled);
   },
 
-  // 提醒时间
   onNotifyTimeChange(e) {
-    this.setData({ notifyTime: e.detail.value });
-    storage.set('notify_time', e.detail.value);
+    const time = e.detail.value;
+    this.setData({ notifyTime: time });
+    storage.set('notify_time', time);
+    this._syncSettingToBackend('notifyTime', time);
   },
 
-  // 数据备份（真实实现）
   backupData() {
     const now = new Date();
-    const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-    const timeStr = String(now.getHours()).padStart(2, '0') + '-' + String(now.getMinutes()).padStart(2, '0');
-    
     const allData = {};
-    try {
-      const keys = ['worker_law_token', 'worker_law_user', 'font_scale', 'hourly_rate', 'default_shift', 'notify_enabled', 'notify_time'];
-      keys.forEach(key => {
-        try {
-          const value = wx.getStorageSync(key);
-          if (value !== '' && value !== null && value !== undefined) {
-            allData[key] = value;
-          }
-        } catch (e) {}
-      });
-    } catch (e) {}
+    ['worker_law_user'].forEach(key => {
+      const value = wx.getStorageSync(key);
+      if (value !== '' && value !== null && value !== undefined) allData[key] = value;
+    });
+    ['font_scale', 'default_shift', 'notify_enabled', 'notify_time'].forEach(key => {
+      const value = storage.get(key);
+      if (value !== '' && value !== null && value !== undefined) allData[key] = value;
+    });
 
-    const backupData = {
-      app: '工友守护·薪工记',
+    const fileName = '工友守护薪工记_备份_' + formatBackupDate(now) + '.json';
+    const jsonStr = JSON.stringify({
+      app: '工友守护-薪工记',
       version: '1.0.0',
       backupTime: now.toISOString(),
       data: allData
-    };
+    }, null, 2);
 
-    const jsonStr = JSON.stringify(backupData, null, 2);
-    
     wx.showModal({
       title: '数据备份',
-      content: `即将备份 ${Object.keys(allData).length} 项数据\n文件名：工友守护薪工记_备份_${dateStr}_${timeStr}.json`,
+      content: '即将备份 ' + Object.keys(allData).length + ' 项数据',
       confirmText: '确认备份',
-      cancelText: '取消',
-      success: (res) => {
+      success: res => {
         if (!res.confirm) return;
-        
-        const fileName = `工友守护薪工记_备份_${dateStr}_${timeStr}.json`;
-        
         wx.getFileSystemManager().writeFile({
-          filePath: `${wx.env.USER_DATA_PATH}/${fileName}`,
+          filePath: wx.env.USER_DATA_PATH + '/' + fileName,
           data: jsonStr,
           encoding: 'utf8',
-          success: () => {
-            wx.showModal({
-              title: '备份成功',
-              content: `备份文件已保存到：${fileName}\n\n提示：可通过文件管理器查看或分享`,
-              showCancel: false,
-              confirmText: '知道了'
-            });
-          },
-          fail: (err) => {
-            toast('备份失败：' + (err.message || '未知错误'));
-          }
+          success: () => wx.showModal({
+            title: '备份成功',
+            content: '备份文件已保存：' + fileName,
+            showCancel: false
+          }),
+          fail: err => toast('备份失败：' + (err.message || '未知错误'))
         });
       }
     });
   },
 
-  // 数据恢复（真实实现）
   restoreData() {
     wx.showModal({
       title: '数据恢复',
-      content: '此操作将覆盖当前所有本地数据，确定要恢复吗？',
-      confirmText: '确认恢复',
-      confirmColor: '#E53935',
-      success: (res) => {
-        if (!res.confirm) return;
-        
-        wx.showActionSheet({
-          itemList: ['从本地文件恢复'],
-          success: (actionRes) => {
-            if (actionRes.tapIndex === 0) {
-              wx.showModal({
-                title: '操作提示',
-                content: '请手动将备份文件放置到手机存储中，然后在文件管理器中打开并选择「工友守护·薪工记」进行恢复。\n\n备份文件格式：工友守护薪工记_备份_*.json',
-                showCancel: false,
-                confirmText: '知道了'
-              });
-            }
-          }
-        });
-      }
+      content: '当前版本暂不支持自动恢复。请妥善保留导出的备份文件。',
+      showCancel: false
     });
   },
 
-  // 清除数据（二次确认）
   clearData() {
     wx.showModal({
       title: '确认清除',
       content: '将清除所有本地数据，且不可恢复，是否继续？',
       confirmColor: '#E53935',
       confirmText: '清除',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) {
-          storage.clearAll();
-          // 重置页面状态
-          app.globalData.fontScale = 'medium';
-          this.setData({
-            hourlyRate: '',
-            defaultShift: 'morning',
-            notifyEnabled: false,
-            notifyTime: '09:00',
-            fontScale: 'medium',
-            fontScaleClass: '',
-            settingsExpanded: false
-          });
-          toast('已清除所有数据', 'success');
-        }
+      success: res => {
+        if (!res.confirm) return;
+        storage.clearAll();
+        app.globalData.userInfo = null;
+        app.globalData.fontScale = 'medium';
+        this.setData({
+          isLoggedIn: false,
+          userInfo: null,
+          defaultShift: 'morning',
+          notifyEnabled: false,
+          notifyTime: '09:00',
+          fontScale: 'medium',
+          fontScaleClass: '',
+          settingsExpanded: false
+        });
+        toast('已清除所有数据', 'success');
       }
     });
   },
 
-  // 关于
   showAbout() {
     wx.showModal({
-      title: '关于工友守护·薪工记',
-      content: '版本：v1.0.0\n\n简介：工友守护·薪工记致力于帮助基层劳动者记录工时、计算工资、了解劳动法律常识。\n\n免责声明：本应用提供的内容仅供参考，不构成法律意见，具体劳务纠纷请咨询当地人社部门或专业律师。',
+      title: '关于薪工记',
+      content: '工友守护·薪工记用于记录工时工资、管理账本、合同条款自查和常见规则信息整理。',
       showCancel: false,
-      confirmText: '我知道了'
+      confirmText: '知道了'
     });
   },
 
-  // 退出登录
   doLogout() {
     wx.showModal({
       title: '退出登录',
       content: '确定要退出登录吗？',
       confirmText: '退出',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) {
-          auth.logout();
-          this._refreshLoginState();
-          toast('已退出登录', 'success');
-        }
+      success: res => {
+        if (!res.confirm) return;
+        auth.logout();
+        this._refreshLoginState();
+        toast('已退出登录', 'success');
       }
     });
   }

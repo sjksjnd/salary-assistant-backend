@@ -1,35 +1,34 @@
 <!-- pages/profile/profile.wxml -->
 <view class="page {{fontScaleClass}}">
 
-  <!-- 顶部用户卡片 -->
-  <view class="user-card" bindtap="goLogin">
+  <!-- 顶部用户卡片（未登录跳转登录，已登录弹出编辑选项） -->
+  <view class="user-card" bindtap="onUserCardTap">
     <view class="avatar">
       <image wx:if="{{userInfo.avatarUrl}}" src="{{userInfo.avatarUrl}}" mode="aspectFill" />
       <text wx:else class="avatar-placeholder">👤</text>
     </view>
     <view class="user-info">
       <view class="username">
-        {{isLoggedIn ? (userInfo.nickName || '工友用户') : '点击登录'}}
+        {{isLoggedIn ? (userInfo.nickname || '工友用户') : '点击登录'}}
       </view>
       <view class="user-meta" wx:if="{{isLoggedIn}}">
-        <text class="tag tag-info">等级 {{level}}</text>
-        <text class="points">积分 {{points}}</text>
+        <text class="tag tag-info">资料已同步</text>
       </view>
       <view class="user-meta hint" wx:else>登录后享受更多服务</view>
     </view>
-    <view class="arrow" wx:if="{{!isLoggedIn}}">›</view>
+    <view class="arrow">›</view>
   </view>
 
   <!-- 功能菜单 -->
   <view class="menu-group">
     <view class="menu-cell" bindtap="goContractRecords">
       <text class="menu-icon">📋</text>
-      <text class="menu-label">我的检测记录</text>
+      <text class="menu-label">我的记录</text>
       <text class="arrow">›</text>
     </view>
     <view class="menu-cell" bindtap="goSalaryRecords">
       <text class="menu-icon">💰</text>
-      <text class="menu-label">我的工资账单</text>
+      <text class="menu-label">工资核对</text>
       <text class="arrow">›</text>
     </view>
   </view>
@@ -57,16 +56,6 @@
           <view class="option-btn {{fontScale === 'extra-large' ? 'active' : ''}}"
                 bindtap="onFontScaleChange" data-scale="extra-large">超大</view>
         </view>
-      </view>
-
-      <!-- 时薪设置 -->
-      <view class="setting-row">
-        <text class="setting-label">时薪设置（元）</text>
-        <input class="setting-input"
-               type="digit"
-               placeholder="1-500"
-               value="{{hourlyRate}}"
-               bindinput="onHourlyRateInput" />
       </view>
 
       <!-- 默认班次 -->
@@ -102,17 +91,12 @@
   <view class="menu-group">
     <view class="menu-cell" bindtap="backupData">
       <text class="menu-icon">📤</text>
-      <text class="menu-label">数据备份</text>
-      <text class="arrow">›</text>
-    </view>
-    <view class="menu-cell" bindtap="restoreData">
-      <text class="menu-icon">📥</text>
-      <text class="menu-label">数据恢复</text>
+      <text class="menu-label">导出本地数据</text>
       <text class="arrow">›</text>
     </view>
     <view class="menu-cell" bindtap="clearData">
       <text class="menu-icon">🗑️</text>
-      <text class="menu-label danger">清除数据</text>
+      <text class="menu-label danger">清除本地数据</text>
       <text class="arrow">›</text>
     </view>
   </view>

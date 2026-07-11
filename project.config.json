@@ -1,7 +1,24 @@
 {
   "description": "工友守护·薪工记小程序",
+  "miniprogramRoot": "./",
+  "cloudfunctionRoot": "./cloudfunctions/",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      { "type": "folder", "value": ".codebuddy" },
+      { "type": "folder", "value": ".rules" },
+      { "type": "folder", "value": ".workbuddy" },
+      { "type": "folder", "value": "codebuddy-plugin" },
+      { "type": "folder", "value": "rules" },
+      { "type": "file", "value": "package.json" },
+      { "type": "file", "value": "package-lock.json" },
+      { "type": "file", "value": ".gitignore" },
+      { "type": "file", "value": ".env.local" },
+      { "type": "file", "value": ".mcp.json" },
+      { "type": "file", "value": "CODEBUDDY.md" },
+      { "type": "file", "value": "README.md" },
+      { "type": "file", "value": "generate-icons.js" },
+      { "type": "file", "value": "generate-icons-pro.js" }
+    ],
     "include": []
   },
   "setting": {

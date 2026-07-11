@@ -1,50 +1,53 @@
-// 工资管理页
+// 工资核对页：月底核对实际到账、工时参考工资和日常扣款花销
 const { apiRequest, toast } = require('../../utils/api');
 
-// 金额校验范围
 const AMOUNT_MIN = 1;
 const AMOUNT_MAX = 200000;
 
-// 扣款分类（5 项）
 const DEDUCTION_CATEGORIES = [
-  { value: 'meal', label: '餐费', icon: '🍜' },
+  { value: 'meal', label: '餐费', icon: '🍚' },
   { value: 'housing', label: '住宿', icon: '🏠' },
   { value: 'social_security', label: '社保个人部分', icon: '🛡️' },
   { value: 'fine', label: '罚款', icon: '⚠️' },
-  { value: 'other', label: '其他', icon: '📝' }
+  { value: 'other', label: '其他', icon: '📄' }
 ];
 
-// 花销分类（带 emoji 图标）
 const EXPENSE_CATEGORIES = [
-  { value: 'dining', label: '餐饮', icon: '🍜' },
-  { value: 'transport', label: '交通', icon: '🚗' },
+  { value: 'dining', label: '餐饮', icon: '🍚' },
+  { value: 'transport', label: '交通', icon: '🚌' },
   { value: 'rent', label: '房租', icon: '🏠' },
   { value: 'shopping', label: '购物', icon: '🛒' },
-  { value: 'entertainment', label: '娱乐', icon: '🎮' },
   { value: 'medical', label: '医疗', icon: '💊' },
-  { value: 'study', label: '学习', icon: '📚' },
-  { value: 'gift', label: '人情', icon: '🎁' },
   { value: 'phone', label: '话费', icon: '📱' },
-  { value: 'internet', label: '网费', icon: '🌐' },
-  { value: 'electricity', label: '电费', icon: '⚡' },
-  { value: 'water', label: '水费', icon: '💧' },
-  { value: 'other', label: '其他', icon: '📝' }
+  { value: 'other', label: '其他', icon: '📄' }
 ];
 
-// 月份格式化为 YYYY-MM
+const OVERTIME_RATE = {
+  weekday: 1.5,
+  weekend: 2,
+  holiday: 3
+};
+
+const HOLIDAYS_2026 = [
+  '2026-01-01', '2026-02-08', '2026-02-09', '2026-02-10', '2026-02-11',
+  '2026-02-12', '2026-02-13', '2026-02-14', '2026-04-04', '2026-04-05',
+  '2026-04-06', '2026-05-01', '2026-05-02', '2026-05-03', '2026-06-19',
+  '2026-06-20', '2026-06-21', '2026-09-25', '2026-09-26', '2026-09-27',
+  '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05',
+  '2026-10-06', '2026-10-07'
+];
+
 function formatMonth(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   return y + '-' + m;
 }
 
-// 月份展示文本：YYYY年M月
 function formatMonthLabel(monthStr) {
   const parts = String(monthStr).split('-');
   return parts[0] + '年' + parseInt(parts[1], 10) + '月';
 }
 
-// 当天日期 YYYY-MM-DD
 function todayStr() {
   const d = new Date();
   const y = d.getFullYear();
@@ -53,136 +56,317 @@ function todayStr() {
   return y + '-' + m + '-' + day;
 }
 
+function money(value) {
+  return Number(value || 0).toFixed(2);
+}
+
 Page({
   data: {
     currentMonth: '',
     monthLabel: '',
     fontScaleClass: '',
     loading: false,
-    settlement: null,        // 实发工资
-    deductions: [],           // 扣款列表
-    expenses: [],             // 花销列表
-    advances: [],             // 预支列表
+    loadWarning: '',
+    settlement: null,
+    deductions: [],
+    expenses: [],
+    advances: [],
+    actualSalary: 0,
+    referenceSalary: 0,
+    ordinarySalary: 0,
+    salaryGap: 0,
     totalDeduction: 0,
     totalExpense: 0,
     totalAdvance: 0,
-    netSalary: 0,
     remaining: 0,
-    expenseStats: [],         // 花销分类统计
-    deductionStats: [],       // 扣款分类统计
-    // 弹窗显隐
+    workSummary: {
+      days: 0,
+      hours: '0',
+      overtimeHours: '0'
+    },
+    salaryStatus: {
+      label: '待录入到账工资',
+      tone: 'neutral'
+    },
+    salaryInsight: {
+      tone: 'neutral',
+      title: '先记工时，再核对到账工资',
+      desc: '本页会把记工时生成的参考应得、实际到账、扣款和花销放在一起核对。'
+    },
+    display: {
+      actualSalary: '0.00',
+      referenceSalary: '0.00',
+      salaryGap: '0.00',
+      totalDeduction: '0.00',
+      totalExpense: '0.00',
+      totalAdvance: '0.00',
+      remaining: '0.00'
+    },
+    expenseStats: [],
+    deductionStats: [],
+    actualSalaryModal: false,
     deductionModal: false,
     expenseModal: false,
     advanceModal: false,
-    // 表单数据
+    billModal: false,
+    billSummary: null,
+    billSections: [],
+    actualSalaryForm: { amount: '' },
     deductionForm: { category: 'meal', amount: '', note: '', date: '' },
     expenseForm: { category: 'dining', amount: '', note: '', date: '' },
-    advanceForm: { amount: '', purpose: '' },
-    // 分享相关
+    advanceForm: { amount: '', purpose: '', date: '' },
     shareModal: false,
     shareImage: '',
-    // 静态分类数据
     deductionCategories: DEDUCTION_CATEGORIES,
     expenseCategories: EXPENSE_CATEGORIES,
     submitting: false
   },
 
   onLoad() {
-    const now = new Date();
-    const month = formatMonth(now);
+    const month = formatMonth(new Date());
     this.setData({
       currentMonth: month,
       monthLabel: formatMonthLabel(month),
       'deductionForm.date': todayStr(),
-      'expenseForm.date': todayStr()
+      'expenseForm.date': todayStr(),
+      'advanceForm.date': todayStr()
     });
     this._applyFontScale();
+    this._loadSeq = 0;
     this.loadData();
   },
 
   onShow() {
-    // 从设置页返回时刷新字号偏好
     this._applyFontScale();
-    if (this.data.currentMonth) {
-      this.loadData();
-    }
+    if (this.data.currentMonth) this.loadData();
   },
 
-  // 应用字号缩放（中年劳动者字号偏大）
+  onPullDownRefresh() {
+    this.loadData().finally(() => wx.stopPullDownRefresh());
+  },
+
   _applyFontScale() {
     const app = getApp();
     const scale = (app && app.globalData && app.globalData.fontScale) || 'medium';
     let cls = '';
     if (scale === 'large') cls = 'font-scale-large';
     else if (scale === 'extra-large') cls = 'font-scale-extra-large';
-    if (this.data.fontScaleClass !== cls) {
-      this.setData({ fontScaleClass: cls });
-    }
+    if (this.data.fontScaleClass !== cls) this.setData({ fontScaleClass: cls });
   },
 
-  onPullDownRefresh() {
-    this.loadData();
-    wx.stopPullDownRefresh();
+  _checkLogin() {
+    const app = getApp();
+    if (app && app.requireLogin) return app.requireLogin('/pages/salary/salary');
+    return true;
   },
 
-  // 加载月度数据
   loadData() {
     const month = this.data.currentMonth;
-    if (!month) return;
+    if (!month) return Promise.resolve();
+    const seq = ++this._loadSeq;
     this.setData({ loading: true });
 
-    Promise.all([
-      apiRequest('/salary/bill/' + month).catch(() => null),
-      apiRequest('/salary/deductions/' + month).catch(() => []),
-      apiRequest('/salary/expenses/' + month).catch(() => []),
-      apiRequest('/salary/advances/' + month).catch(() => [])
-    ]).then(res => {
-      const [settlement, deductions, expenses, advances] = res;
-      const dedList = Array.isArray(deductions) ? deductions : [];
-      const expList = Array.isArray(expenses) ? expenses : [];
-      const advList = Array.isArray(advances) ? advances : [];
+    const safeRequest = (promise, fallback, label, warnOnFail = true) => promise
+      .then(data => ({ data, label, failed: false }))
+      .catch(() => ({ data: fallback, label, failed: warnOnFail }));
 
-      const totalDeduction = this.sumAmount(dedList);
-      const totalExpense = this.sumAmount(expList);
-      const totalAdvance = this.sumAmount(advList);
-      const netSalary = this.extractNetSalary(settlement);
-      const remaining = netSalary - totalDeduction - totalExpense - totalAdvance;
+    return Promise.all([
+      safeRequest(apiRequest('/salary/bill/' + month), null, '到账工资', false),
+      safeRequest(apiRequest('/salary/deductions/' + month), [], '扣款'),
+      safeRequest(apiRequest('/salary/expenses/' + month), [], '花销'),
+      safeRequest(apiRequest('/salary/advances/' + month), [], '预支'),
+      safeRequest(apiRequest('/workhours/month/' + month), { records: [] }, '工时')
+    ])
+      .then(res => {
+        if (seq !== this._loadSeq) return;
+        const failedLabels = res.filter(item => item.failed).map(item => item.label);
+        const [settlement, deductions, expenses, advances, workData] = res.map(item => item.data);
+        const dedList = Array.isArray(deductions) ? deductions : [];
+        const expList = Array.isArray(expenses) ? expenses : [];
+        const advList = Array.isArray(advances) ? advances : [];
+        const workRecords = Array.isArray(workData) ? workData : (workData && workData.records) || [];
+        const workSummary = this.computeWorkSummary(workRecords);
+        const totalDeduction = this.sumAmount(dedList);
+        const totalExpense = this.sumAmount(expList);
+        const totalAdvance = this.sumAmount(advList);
+        const actualSalary = this.extractActualSalary(settlement);
+        const salaryGap = actualSalary > 0 ? Math.max(0, workSummary.referenceSalary - actualSalary) : 0;
+        const remaining = actualSalary > 0 ? actualSalary - totalExpense - totalAdvance : 0;
 
-      // 扣款超出警告状态
-      const deductionWarning = netSalary > 0 && totalDeduction > netSalary;
-
-      this.setData({
-        loading: false,
-        settlement,
-        deductions: dedList,
-        expenses: expList,
-        advances: advList,
-        totalDeduction,
-        totalExpense,
-        totalAdvance,
-        netSalary,
-        remaining,
-        deductionWarning,
-        expenseStats: this.buildStats(expList, EXPENSE_CATEGORIES),
-        deductionStats: this.buildStats(dedList, DEDUCTION_CATEGORIES)
+        this.setData({
+          loading: false,
+          loadWarning: failedLabels.length ? '部分数据暂时未加载：' + failedLabels.join('、') : '',
+          settlement,
+          deductions: dedList,
+          expenses: expList,
+          advances: advList,
+          actualSalary,
+          referenceSalary: Number(workSummary.referenceSalary.toFixed(2)),
+          ordinarySalary: Number(workSummary.ordinarySalary.toFixed(2)),
+          salaryGap: Number(salaryGap.toFixed(2)),
+          totalDeduction,
+          totalExpense,
+          totalAdvance,
+          remaining: Number(remaining.toFixed(2)),
+          workSummary: {
+            days: workSummary.days,
+            hours: workSummary.hoursLabel,
+            overtimeHours: workSummary.overtimeHoursLabel
+          },
+          salaryStatus: this.getSalaryStatus(actualSalary, salaryGap),
+          salaryInsight: this.getSalaryInsight({
+            actualSalary,
+            salaryGap,
+            totalExpense,
+            totalAdvance,
+            totalDeduction,
+            remaining,
+            workSummary
+          }),
+          display: this.buildDisplay({
+            actualSalary,
+            referenceSalary: workSummary.referenceSalary,
+            salaryGap,
+            totalDeduction,
+            totalExpense,
+            totalAdvance,
+            remaining
+          }),
+          expenseStats: this.buildStats(expList, EXPENSE_CATEGORIES),
+          deductionStats: this.buildStats(dedList, DEDUCTION_CATEGORIES),
+          'actualSalaryForm.amount': actualSalary > 0 ? money(actualSalary) : ''
+        });
+      })
+      .catch(() => {
+        if (seq !== this._loadSeq) return;
+        this.setData({ loading: false, loadWarning: '数据加载失败，请稍后重试' });
       });
-    }).catch(() => {
-      this.setData({ loading: false });
-    });
   },
 
-  // 从结算对象提取实发工资（兼容多种字段名）
-  extractNetSalary(settlement) {
-    if (!settlement) return 0;
-    if (typeof settlement === 'number') return settlement;
-    if (typeof settlement === 'object') {
-      const v = settlement.netSalary || settlement.net_salary || settlement.amount || settlement.total || 0;
-      return Number(v) || 0;
-    }
+  computeWorkSummary(records) {
+    let days = 0;
+    let totalHours = 0;
+    let ordinarySalary = 0;
+    let referenceSalary = 0;
+    let overtimeHours = 0;
+
+    (records || []).forEach(record => {
+      const h = Number(record.hours) || 0;
+      if (h <= 0) return;
+      const rate = this.getRecordRate(record);
+      days += 1;
+      totalHours += h;
+      ordinarySalary += h * rate;
+
+      const date = new Date(record.date || record.recordDate);
+      const weekday = date.getDay();
+      const dateStr = record.date || record.recordDate || '';
+      const isWeekend = weekday === 0 || weekday === 6;
+      const isHoliday = HOLIDAYS_2026.indexOf(dateStr) !== -1;
+
+      if (isHoliday) {
+        referenceSalary += h * rate * OVERTIME_RATE.holiday;
+        overtimeHours += h;
+      } else if (isWeekend) {
+        referenceSalary += h * rate * OVERTIME_RATE.weekend;
+        overtimeHours += h;
+      } else {
+        const regularHours = Math.min(h, 8);
+        const extraHours = Math.max(0, h - 8);
+        referenceSalary += regularHours * rate + extraHours * rate * OVERTIME_RATE.weekday;
+        overtimeHours += extraHours;
+      }
+    });
+
+    return {
+      days,
+      totalHours,
+      ordinarySalary,
+      referenceSalary,
+      overtimeHours,
+      hoursLabel: totalHours % 1 === 0 ? String(totalHours) : totalHours.toFixed(1),
+      overtimeHoursLabel: overtimeHours % 1 === 0 ? String(overtimeHours) : overtimeHours.toFixed(1)
+    };
+  },
+
+  getRecordRate(record) {
+    const explicitRate = Number(record.rate);
+    if (explicitRate > 0) return explicitRate;
+    const hours = Number(record.hours) || 0;
+    const wage = Number(record.wage != null ? record.wage : record.payAmount);
+    if (hours > 0 && wage > 0) return wage / hours;
     return 0;
   },
 
-  // 求和（兼容多种字段名）
+  extractActualSalary(settlement) {
+    if (!settlement) return 0;
+    if (typeof settlement === 'number') return Number(settlement) || 0;
+    const value = settlement.actualSalary || settlement.netSalary || settlement.net_salary || settlement.amount || 0;
+    return Number(value) || 0;
+  },
+
+  getSalaryStatus(actualSalary, salaryGap) {
+    if (!actualSalary) return { label: '待录入到账工资', tone: 'neutral' };
+    if (salaryGap > 0) return { label: '建议核对工资条', tone: 'warning' };
+    return { label: '到账已覆盖参考金额', tone: 'success' };
+  },
+
+  getSalaryInsight(values) {
+    const workSummary = values.workSummary || {};
+    if (!workSummary.days) {
+      return {
+        tone: 'neutral',
+        title: '本月还没有记工时',
+        desc: '先在记工时里记录每天工时和时薪，月底这里会自动生成参考应得。'
+      };
+    }
+    if (!values.actualSalary) {
+      return {
+        tone: 'neutral',
+        title: '等待录入实际到账',
+        desc: '已根据工时估算参考应得，发工资后录入到账金额即可看到差额。'
+      };
+    }
+    if (values.salaryGap > 0) {
+      return {
+        tone: 'warning',
+        title: '到账低于参考应得',
+        desc: '建议先核对工资条、考勤记录、加班记录和扣款明细，确认差额来源。'
+      };
+    }
+    if (values.remaining < 0) {
+      return {
+        tone: 'warning',
+        title: '到账后结余为负',
+        desc: '本月花销和预支已超过到账金额，建议检查是否重复记录。'
+      };
+    }
+    if (values.totalDeduction > 0) {
+      return {
+        tone: 'success',
+        title: '工资核对基本正常',
+        desc: '已录入扣款记录，建议月底和工资条逐项核对金额与类别。'
+      };
+    }
+    return {
+      tone: 'success',
+      title: '工资核对基本正常',
+      desc: '实际到账已覆盖当前参考应得，可继续补充扣款、花销和预支记录。'
+    };
+  },
+
+  buildDisplay(values) {
+    return {
+      actualSalary: money(values.actualSalary),
+      referenceSalary: money(values.referenceSalary),
+      salaryGap: money(values.salaryGap),
+      totalDeduction: money(values.totalDeduction),
+      totalExpense: money(values.totalExpense),
+      totalAdvance: money(values.totalAdvance),
+      remaining: money(values.remaining)
+    };
+  },
+
   sumAmount(list) {
     return (list || []).reduce((acc, item) => {
       const v = Number(item.amount != null ? item.amount : item.money);
@@ -190,7 +374,6 @@ Page({
     }, 0);
   },
 
-  // 构建分类统计（金额 + 百分比，用于代替饼图）
   buildStats(list, categories) {
     const total = this.sumAmount(list);
     const map = {};
@@ -203,13 +386,12 @@ Page({
       .map(c => {
         const amount = map[c.value] || 0;
         const percent = total > 0 ? Math.round((amount / total) * 100) : 0;
-        return { value: c.value, label: c.label, icon: c.icon, amount, percent };
+        return { value: c.value, label: c.label, icon: c.icon, amount: Number(amount.toFixed(2)), amountText: money(amount), percent };
       })
       .filter(c => c.amount > 0)
       .sort((a, b) => b.amount - a.amount);
   },
 
-  // 月份切换
   prevMonth() {
     const [y, m] = this.data.currentMonth.split('-').map(n => parseInt(n, 10));
     const d = new Date(y, m - 2, 1);
@@ -221,7 +403,6 @@ Page({
   nextMonth() {
     const [y, m] = this.data.currentMonth.split('-').map(n => parseInt(n, 10));
     const d = new Date(y, m, 1);
-    // 不能超过当前月份
     const now = new Date();
     if (d.getFullYear() > now.getFullYear() ||
         (d.getFullYear() === now.getFullYear() && d.getMonth() > now.getMonth())) {
@@ -233,7 +414,14 @@ Page({
     this.loadData();
   },
 
-  // 打开/关闭弹窗
+  openActualSalaryModal() {
+    if (!this._checkLogin()) return;
+    this.setData({
+      actualSalaryModal: true,
+      actualSalaryForm: { amount: this.data.actualSalary > 0 ? money(this.data.actualSalary) : '' }
+    });
+  },
+
   openDeductionModal() {
     if (!this._checkLogin()) return;
     this.setData({
@@ -241,6 +429,7 @@ Page({
       deductionForm: { category: 'meal', amount: '', note: '', date: todayStr() }
     });
   },
+
   openExpenseModal() {
     if (!this._checkLogin()) return;
     this.setData({
@@ -248,49 +437,53 @@ Page({
       expenseForm: { category: 'dining', amount: '', note: '', date: todayStr() }
     });
   },
+
   openAdvanceModal() {
     if (!this._checkLogin()) return;
     this.setData({
       advanceModal: true,
-      advanceForm: { amount: '', purpose: '' }
+      advanceForm: { amount: '', purpose: '', date: todayStr() }
     });
   },
+
   closeModal() {
-    this.setData({ deductionModal: false, expenseModal: false, advanceModal: false, submitting: false });
+    if (this.data.submitting) return;
+    this.setData({
+      actualSalaryModal: false,
+      deductionModal: false,
+      expenseModal: false,
+      advanceModal: false,
+      submitting: false
+    });
   },
 
-  // 登录校验
-  _checkLogin() {
-    const app = getApp();
-    if (app && app.requireLogin) {
-      return app.requireLogin('/pages/salary/salary');
-    }
-    return true;
+  onActualSalaryField(e) {
+    this.setData({ 'actualSalaryForm.amount': e.detail.value });
   },
 
-  // 表单字段修改（input 与 picker 共用）
   onDeductionField(e) {
     const field = e.currentTarget.dataset.field;
     this.setData({ ['deductionForm.' + field]: e.detail.value });
   },
+
   onExpenseField(e) {
     const field = e.currentTarget.dataset.field;
     this.setData({ ['expenseForm.' + field]: e.detail.value });
   },
+
   onAdvanceField(e) {
     const field = e.currentTarget.dataset.field;
     this.setData({ ['advanceForm.' + field]: e.detail.value });
   },
 
-  // 选择分类
   pickDeductionCategory(e) {
     this.setData({ 'deductionForm.category': e.currentTarget.dataset.value });
   },
+
   pickExpenseCategory(e) {
     this.setData({ 'expenseForm.category': e.currentTarget.dataset.value });
   },
 
-  // 校验金额
   validateAmount(amount) {
     const v = Number(amount);
     if (!amount || isNaN(v)) {
@@ -308,7 +501,35 @@ Page({
     return v;
   },
 
-  // 提交扣款
+  submitActualSalary() {
+    const amount = this.validateAmount(this.data.actualSalaryForm.amount);
+    if (amount === null || this.data.submitting) return;
+    const remaining = amount - this.data.totalExpense - this.data.totalAdvance;
+    this.setData({ submitting: true });
+    apiRequest('/salary/bill', {
+      method: 'POST',
+      data: {
+        month: this.data.currentMonth,
+        grossSalary: this.data.referenceSalary,
+        actualSalary: amount,
+        totalDeductions: this.data.totalDeduction,
+        totalExpenses: this.data.totalExpense,
+        totalAdvances: this.data.totalAdvance,
+        remaining,
+        isSettled: true
+      }
+    })
+      .then(() => {
+        toast('到账工资已保存', 'success');
+        this.setData({ actualSalaryModal: false, submitting: false });
+        this.loadData();
+      })
+      .catch(err => {
+        this.setData({ submitting: false });
+        toast(err.message || '保存失败');
+      });
+  },
+
   submitDeduction() {
     const form = this.data.deductionForm;
     const amount = this.validateAmount(form.amount);
@@ -317,21 +538,9 @@ Page({
       toast('请选择日期');
       return;
     }
-    // 扣款超过实发工资时警告
-    if (this.data.netSalary > 0 && amount > this.data.netSalary) {
-      wx.showModal({
-        title: '金额提示',
-        content: '扣款金额超过本月实发工资，是否继续提交？',
-        confirmText: '继续提交',
-        cancelText: '再改改',
-        success: res => {
-          if (res.confirm) this._doSubmitDeduction(form, amount);
-        }
-      });
-      return;
-    }
     this._doSubmitDeduction(form, amount);
   },
+
   _doSubmitDeduction(form, amount) {
     if (this.data.submitting) return;
     this.setData({ submitting: true });
@@ -339,22 +548,23 @@ Page({
       method: 'POST',
       data: {
         category: form.category,
-        amount: amount,
+        amount,
         note: form.note || '',
         date: form.date,
         month: this.data.currentMonth
       }
-    }).then(() => {
-      toast('已添加扣款', 'success');
-      this.setData({ deductionModal: false, submitting: false });
-      this.loadData();
-    }).catch(err => {
-      this.setData({ submitting: false });
-      toast(err.message || '添加失败');
-    });
+    })
+      .then(() => {
+        toast('已添加扣款', 'success');
+        this.setData({ deductionModal: false, submitting: false });
+        this.loadData();
+      })
+      .catch(err => {
+        this.setData({ submitting: false });
+        toast(err.message || '添加失败');
+      });
   },
 
-  // 提交花销
   submitExpense() {
     const form = this.data.expenseForm;
     const amount = this.validateAmount(form.amount);
@@ -369,22 +579,23 @@ Page({
       method: 'POST',
       data: {
         category: form.category,
-        amount: amount,
+        amount,
         note: form.note || '',
         date: form.date,
         month: this.data.currentMonth
       }
-    }).then(() => {
-      toast('已添加花销', 'success');
-      this.setData({ expenseModal: false, submitting: false });
-      this.loadData();
-    }).catch(err => {
-      this.setData({ submitting: false });
-      toast(err.message || '添加失败');
-    });
+    })
+      .then(() => {
+        toast('已添加花销', 'success');
+        this.setData({ expenseModal: false, submitting: false });
+        this.loadData();
+      })
+      .catch(err => {
+        this.setData({ submitting: false });
+        toast(err.message || '添加失败');
+      });
   },
 
-  // 提交预支
   submitAdvance() {
     const form = this.data.advanceForm;
     const amount = this.validateAmount(form.amount);
@@ -393,173 +604,145 @@ Page({
       toast('请填写用途');
       return;
     }
+    if (!form.date) {
+      toast('请选择日期');
+      return;
+    }
     if (this.data.submitting) return;
     this.setData({ submitting: true });
     apiRequest('/salary/advances', {
       method: 'POST',
       data: {
-        amount: amount,
+        amount,
         purpose: form.purpose,
-        month: this.data.currentMonth
+        month: this.data.currentMonth,
+        date: form.date
       }
-    }).then(() => {
-      toast('已添加预支', 'success');
-      this.setData({ advanceModal: false, submitting: false });
-      this.loadData();
-    }).catch(err => {
-      this.setData({ submitting: false });
-      toast(err.message || '添加失败');
-    });
+    })
+      .then(() => {
+        toast('已添加预支', 'success');
+        this.setData({ advanceModal: false, submitting: false });
+        this.loadData();
+      })
+      .catch(err => {
+        this.setData({ submitting: false });
+        toast(err.message || '添加失败');
+      });
   },
 
-  // 月度账单：归档并跳转
+  buildBillSummary() {
+    const { actualSalary, referenceSalary, salaryGap, totalDeduction, totalExpense, totalAdvance, remaining } = this.data;
+    const base = Math.max(actualSalary, referenceSalary, totalDeduction, totalExpense, totalAdvance, 1);
+    const toPercent = amount => amount ? Math.max(4, Math.min(100, Math.round((amount / base) * 100))) : 0;
+    const sections = [
+      { key: 'reference', label: '参考应得', amount: referenceSalary, amountText: money(referenceSalary), percent: toPercent(referenceSalary), tone: 'income' },
+      { key: 'actual', label: '实际到账', amount: actualSalary, amountText: money(actualSalary), percent: toPercent(actualSalary), tone: 'actual' },
+      { key: 'gap', label: '参考差额', amount: salaryGap, amountText: money(salaryGap), percent: toPercent(salaryGap), tone: 'deduction' },
+      { key: 'expense', label: '花销', amount: totalExpense, amountText: money(totalExpense), percent: toPercent(totalExpense), tone: 'expense' },
+      { key: 'advance', label: '预支', amount: totalAdvance, amountText: money(totalAdvance), percent: toPercent(totalAdvance), tone: 'advance' }
+    ];
+
+    return {
+      summary: {
+        referenceSalary,
+        referenceSalaryText: money(referenceSalary),
+        actualSalary,
+        actualSalaryText: money(actualSalary),
+        salaryGap,
+        salaryGapText: money(salaryGap),
+        totalDeduction,
+        outTotal: totalExpense + totalAdvance,
+        remaining,
+        remainingText: money(remaining),
+        insight: this.data.salaryInsight
+      },
+      sections
+    };
+  },
+
   goBills() {
     if (!this._checkLogin()) return;
-    wx.showModal({
-      title: '归档月度账单',
-      content: '是否归档 ' + this.data.monthLabel + ' 的账单？',
-      confirmText: '确认归档',
-      success: res => {
-        if (!res.confirm) return;
-        apiRequest('/salary/bill', {
-          method: 'POST',
-          data: {
-            month: this.data.currentMonth,
-            grossSalary: this.data.netSalary,
-            actualSalary: this.data.netSalary,
-            totalDeductions: this.data.totalDeduction,
-            totalExpenses: this.data.totalExpense,
-            totalAdvances: this.data.totalAdvance,
-            remaining: this.data.remaining,
-            isSettled: true
-          }
-        }).then(() => {
-          toast('账单已归档', 'success');
-          // 跳转账单归档页（若页面未注册则提示）
-          wx.navigateTo({
-            url: '/pages/salary/bills?month=' + this.data.currentMonth,
-            fail: () => toast('账单归档页开发中')
-          });
-        }).catch(err => toast(err.message || '归档失败'));
-      }
+    const hasData = this.data.actualSalary || this.data.referenceSalary || this.data.totalExpense || this.data.totalAdvance || this.data.totalDeduction;
+    if (!hasData) {
+      toast('本月暂无账单数据');
+      return;
+    }
+    const bill = this.buildBillSummary();
+    this.setData({
+      billModal: true,
+      billSummary: bill.summary,
+      billSections: bill.sections
     });
   },
 
-  // 分享账单：生成图片并显示预览
+  closeBillModal() {
+    this.setData({ billModal: false });
+  },
+
   shareBill() {
-    const { monthLabel, netSalary, totalDeduction, totalExpense, totalAdvance, remaining } = this.data;
-    
-    if (netSalary === 0 && totalDeduction === 0 && totalExpense === 0 && totalAdvance === 0) {
+    const { monthLabel, referenceSalary, actualSalary, salaryGap, totalExpense, totalAdvance, remaining } = this.data;
+    if (!referenceSalary && !actualSalary && !totalExpense && !totalAdvance) {
       toast('本月暂无数据，无法分享');
       return;
     }
 
+    this.setData({ billModal: false });
     wx.showLoading({ title: '生成图片中...' });
 
     const ctx = wx.createCanvasContext('billCanvas');
     const width = 600;
     const height = 800;
     const padding = 40;
-
     ctx.setFillStyle('#FFFFFF');
     ctx.fillRect(0, 0, width, height);
 
     ctx.setFillStyle('#2864AC');
-    ctx.setFontSize(36);
-    ctx.setFontWeight('bold');
+    ctx.font = 'bold 36px sans-serif';
     ctx.setTextAlign('center');
     ctx.fillText('工友守护·薪工记', width / 2, 60);
 
-    ctx.setFillStyle('#9CA3AF');
-    ctx.setFontSize(24);
-    ctx.setFontWeight('normal');
-    ctx.fillText('月度工资账单', width / 2, 95);
-
-    ctx.setFillStyle('#2864AC');
-    ctx.setFontSize(32);
-    ctx.setFontWeight('bold');
-    ctx.fillText(monthLabel, width / 2, 140);
-
-    ctx.setStrokeStyle('#E5E7EB');
-    ctx.setLineWidth(1);
-    ctx.beginPath();
-    ctx.moveTo(padding, 160);
-    ctx.lineTo(width - padding, 160);
-    ctx.stroke();
-
-    let y = 200;
-
-    ctx.setFillStyle('#1F2937');
-    ctx.setFontSize(28);
-    ctx.setTextAlign('left');
-    ctx.fillText('实发工资', padding, y);
-    ctx.setTextAlign('right');
-    ctx.setFillStyle('#2864AC');
-    ctx.setFontSize(36);
-    ctx.setFontWeight('bold');
-    ctx.fillText('¥' + netSalary.toFixed(2), width - padding, y);
-    y += 50;
-
-    ctx.setFillStyle('#1F2937');
-    ctx.setFontSize(28);
-    ctx.setFontWeight('normal');
-    ctx.setTextAlign('left');
-    ctx.fillText('扣款合计', padding, y);
-    ctx.setTextAlign('right');
-    ctx.setFillStyle('#DC2626');
-    ctx.fillText('¥' + totalDeduction.toFixed(2), width - padding, y);
-    y += 50;
-
-    ctx.setFillStyle('#1F2937');
-    ctx.setTextAlign('left');
-    ctx.fillText('花销合计', padding, y);
-    ctx.setTextAlign('right');
-    ctx.setFillStyle('#F59E0B');
-    ctx.fillText('¥' + totalExpense.toFixed(2), width - padding, y);
-    y += 50;
-
-    ctx.setFillStyle('#1F2937');
-    ctx.setTextAlign('left');
-    ctx.fillText('预支合计', padding, y);
-    ctx.setTextAlign('right');
     ctx.setFillStyle('#6B7280');
-    ctx.fillText('¥' + totalAdvance.toFixed(2), width - padding, y);
-    y += 50;
+    ctx.font = '24px sans-serif';
+    ctx.fillText(monthLabel + '工资核对', width / 2, 100);
+
+    let y = 160;
+    const rows = [
+      ['参考应得', referenceSalary, '#2864AC'],
+      ['实际到账', actualSalary, '#15935B'],
+      ['参考差额', salaryGap, '#D97706'],
+      ['花销', totalExpense, '#F59E0B'],
+      ['预支', totalAdvance, '#6B7280'],
+      ['到账后结余', remaining, remaining >= 0 ? '#15935B' : '#DC2626']
+    ];
+
+    rows.forEach(row => {
+      ctx.setFillStyle('#1F2937');
+      ctx.font = '28px sans-serif';
+      ctx.setTextAlign('left');
+      ctx.fillText(row[0], padding, y);
+      ctx.setTextAlign('right');
+      ctx.setFillStyle(row[2]);
+      ctx.font = 'bold 34px sans-serif';
+      ctx.fillText('¥' + money(row[1]), width - padding, y);
+      y += 58;
+    });
 
     ctx.setStrokeStyle('#E5E7EB');
     ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
+    ctx.moveTo(padding, y + 8);
+    ctx.lineTo(width - padding, y + 8);
     ctx.stroke();
-    y += 30;
-
-    ctx.setFillStyle('#1F2937');
-    ctx.setFontSize(28);
-    ctx.setTextAlign('left');
-    ctx.fillText('剩余存款', padding, y);
-    ctx.setTextAlign('right');
-    ctx.setFontSize(40);
-    ctx.setFontWeight('bold');
-    ctx.setFillStyle(remaining >= 0 ? '#10B981' : '#DC2626');
-    ctx.fillText('¥' + remaining.toFixed(2), width - padding, y);
-    y += 60;
-
-    ctx.setStrokeStyle('#E5E7EB');
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.stroke();
-    y += 30;
+    y += 54;
 
     ctx.setFillStyle('#9CA3AF');
-    ctx.setFontSize(22);
+    ctx.font = '22px sans-serif';
     ctx.setTextAlign('center');
-    ctx.fillText('工友守护·薪工记 · ' + new Date().toLocaleDateString('zh-CN'), width / 2, y);
+    ctx.fillText('金额仅供记录核对参考', width / 2, y);
 
     ctx.draw(false, () => {
       wx.canvasToTempFilePath({
         canvasId: 'billCanvas',
-        success: (res) => {
+        success: res => {
           wx.hideLoading();
           this.setData({ shareImage: res.tempFilePath, shareModal: true });
         },
@@ -571,7 +754,6 @@ Page({
     });
   },
 
-  // 关闭分享弹窗
   closeShareModal() {
     this.setData({ shareModal: false, shareImage: '' });
   }

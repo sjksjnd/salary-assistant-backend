@@ -68,11 +68,6 @@
   align-items: center;
 }
 
-.points {
-  margin-left: 16rpx;
-  color: var(--warning);
-}
-
 .arrow {
   font-size: 36rpx;
   color: var(--text-tertiary);

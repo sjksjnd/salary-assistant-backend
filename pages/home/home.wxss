@@ -4,68 +4,255 @@
   background: var(--bg);
 }
 
-/* 顶部内边距 */
 .pt-6 {
-  padding-top: 48rpx;
+  padding-top: 28rpx;
 }
 
-/* 顶部欢迎语 */
 .header {
-  text-align: center;
+  text-align: left;
+  margin-bottom: 28rpx;
+  background: linear-gradient(135deg, #FFFFFF 0%, #EEF6FF 100%);
+  border-color: #D6E5F7;
 }
 
-/* 2×2 网格布局 */
-.grid {
+.eyebrow {
+  display: block;
+  color: var(--primary);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.section-head {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  margin: 4rpx 4rpx 16rpx;
+}
+
+.section-title {
+  color: var(--text-primary);
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.section-desc {
+  margin-top: 6rpx;
+  color: var(--text-tertiary);
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.primary-entry {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+  min-height: 188rpx;
+  padding: 28rpx;
+  background: #FFFFFF;
+  border-color: #CFE0F4;
 }
 
-.grid-item {
-  width: 340rpx;
-  box-sizing: border-box;
-  align-items: flex-start;
+.primary-copy {
+  flex: 1;
+  min-width: 0;
+  padding-right: 24rpx;
 }
 
-/* 卡片点击反馈 */
-.card-hover {
-  opacity: 0.85;
-  transform: scale(0.98);
+.section-label {
+  display: inline-flex;
+  color: #1F6E43;
+  background: #EAF7EF;
+  border-radius: 8rpx;
+  padding: 6rpx 12rpx;
+  font-size: 22rpx;
+  font-weight: 700;
 }
 
-/* 图标圆角方块 */
-.icon-box {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: 12rpx;
+.dashboard-card {
+  background: #FFFFFF;
+  border-color: #D7E4F4;
+}
+
+.dashboard-title {
+  display: block;
+  color: var(--text-primary);
+  font-size: 32rpx;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.dashboard-state {
+  width: 82rpx;
+  height: 82rpx;
+  border-radius: 18rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: #FFFFFF;
+  font-size: 36rpx;
+  font-weight: 800;
 }
 
-.icon-emoji {
-  font-size: 28rpx;
-  line-height: 1;
+.dashboard-state.done {
+  background: #15935B;
 }
 
-/* 功能标题 */
-.feature-title {
-  font-size: 30rpx;
-  font-weight: 600;
+.dashboard-state.todo {
+  background: #2864AC;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.dashboard-metric {
+  padding: 20rpx;
+  border-radius: 14rpx;
+  background: #F7F9FC;
+  border: 1rpx solid #E5EAF0;
+}
+
+.metric-value {
+  display: block;
+  color: var(--primary);
+  font-size: 38rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.metric-label {
+  display: block;
+  margin-top: 8rpx;
+  color: var(--text-tertiary);
+  font-size: 23rpx;
+  line-height: 1.4;
+}
+
+.primary-title {
+  display: block;
   color: var(--text-primary);
+  font-size: 38rpx;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.primary-sub {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 26rpx;
+  line-height: 1.5;
+}
+
+.primary-mark {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 16rpx;
+  background: #2864AC;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 42rpx;
+  font-weight: 800;
+}
+
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.tool-card {
+  display: flex;
+  align-items: center;
+  min-height: 138rpx;
+  padding: 24rpx;
+}
+
+.tool-tag {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 14rpx;
+  background: #F0F5FB;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.tool-copy {
+  flex: 1;
+  min-width: 0;
+  margin-left: 22rpx;
+}
+
+.feature-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
 }
 
 .feature-sub {
-  font-size: 22rpx;
+  display: block;
+  font-size: 24rpx;
   color: var(--text-tertiary);
+  line-height: 1.5;
 }
 
-/* 底部说明 */
-.footer {
-  text-align: center;
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
 }
 
-.footer .hint {
-  line-height: 1.8;
+.quick-item {
+  min-height: 132rpx;
+  padding: 22rpx;
+}
+
+.quick-title {
+  display: block;
+  color: var(--text-primary);
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.quick-sub {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.card-hover {
+  opacity: 0.86;
+  transform: scale(0.98);
+}
+
+.boundary-card {
+  background: #F7FBF9;
+  border-color: #CFE8DA;
+}
+
+.boundary-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.boundary-text {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }

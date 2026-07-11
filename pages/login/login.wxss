@@ -2,7 +2,7 @@
 
 .page {
   min-height: 100vh;
-  background: #fff;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   padding: 80rpx 48rpx 48rpx;
@@ -15,19 +15,19 @@
   flex-direction: column;
   align-items: center;
   margin-top: 80rpx;
-  margin-bottom: 120rpx;
+  margin-bottom: 96rpx;
 }
 
 .logo-circle {
   width: 160rpx;
   height: 160rpx;
   background: var(--primary);
-  border-radius: 50%;
+  border-radius: 32rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 32rpx;
-  box-shadow: 0 8rpx 24rpx rgba(40, 100, 172, 0.3);
+  box-shadow: 0 12rpx 28rpx rgba(31, 94, 175, 0.22);
 }
 
 .logo-icon {
@@ -52,6 +52,11 @@
 /* 登录区 */
 .login-section {
   flex: 1;
+  background: #fff;
+  border: 1rpx solid var(--border);
+  border-radius: 16rpx;
+  padding: 32rpx;
+  box-shadow: 0 8rpx 28rpx rgba(23, 32, 51, 0.05);
 }
 
 /* 用户信息表单 */
@@ -128,7 +133,7 @@
   background: #07C160;
   color: #fff;
   font-size: 32rpx;
-  border-radius: 48rpx;
+  border-radius: 16rpx;
   border: none;
   line-height: 96rpx;
   font-weight: 500;
@@ -185,18 +190,6 @@
 
 .agreement-link {
   color: var(--primary);
-}
-
-/* 底部信息 */
-.footer {
-  text-align: center;
-  padding-top: 24rpx;
-}
-
-.footer-text {
-  font-size: 22rpx;
-  color: var(--text-tertiary);
-  line-height: 1.8;
 }
 
 /* 协议弹窗 */
