@@ -44,6 +44,30 @@
   </view>
 
   <view class="card">
+    <view class="flex-between mb-16">
+      <view>
+        <view class="title">文书模板</view>
+        <view class="hint mt-8">恢复原模板下载能力，正式收费需接入微信支付校验。</view>
+      </view>
+    </view>
+    <view class="doc-card" wx:for="{{docTemplates}}" wx:key="id">
+      <view class="doc-head">
+        <view class="doc-icon">{{item.icon}}</view>
+        <view class="doc-main">
+          <view class="doc-title">{{item.name}}</view>
+          <view class="doc-desc">{{item.desc}}</view>
+        </view>
+        <view class="doc-price">{{item.price}}</view>
+      </view>
+      <view class="doc-actions">
+        <button class="doc-btn ghost" data-id="{{item.id}}" bindtap="copyTemplate">复制模板</button>
+        <button class="doc-btn primary" data-id="{{item.id}}" bindtap="downloadTemplate">下载 .doc</button>
+      </view>
+    </view>
+    <view class="doc-note">模板仅供材料整理参考，不构成法律意见，不代写、不代办提交。</view>
+  </view>
+
+  <view class="card">
     <view class="title mb-16">服务边界</view>
     <view class="timeline-detail-box">本工具用于记录、测算、常见规则自查和材料整理，不替代专业机构意见，也不代办任何处理事项。需要人工核实时，可联系 12333、人社服务窗口或工会等公开渠道。</view>
   </view>

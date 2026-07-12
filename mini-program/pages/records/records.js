@@ -217,6 +217,31 @@ Page({
     return apiRequest('/records?' + params.join('&'))
       .then(data => {
         const items = data && Array.isArray(data.items) ? data.items : [];
+        if (this.data.activeType === 'contract' && reset && items.length === 0) {
+          return this._loadContractRecordsFallback(params.join('&'), page, reset);
+        }
+        const nextRecords = items.map(normalizeRecord);
+        this.setData({
+          records: reset ? nextRecords : this.data.records.concat(nextRecords),
+          page: data && data.page ? data.page : page,
+          total: data && data.total ? data.total : nextRecords.length,
+          hasMore: !!(data && data.hasMore),
+          loading: false
+        });
+      })
+      .catch(err => {
+        if (this.data.activeType === 'contract') {
+          return this._loadContractRecordsFallback(params.join('&'), page, reset);
+        }
+        this.setData({ loading: false });
+        toast(err.message || '记录加载失败');
+      });
+  },
+
+  _loadContractRecordsFallback(queryString, page, reset) {
+    return apiRequest('/contract/records?' + queryString)
+      .then(data => {
+        const items = data && Array.isArray(data.items) ? data.items : [];
         const nextRecords = items.map(normalizeRecord);
         this.setData({
           records: reset ? nextRecords : this.data.records.concat(nextRecords),
@@ -243,7 +268,7 @@ Page({
       detailOriginalExpanded: false,
       detailLoading: true
     });
-    apiRequest('/records/' + id)
+    this._loadRecordDetail(id, localRecord)
       .then(data => {
         const selectedRecord = normalizeRecord(Object.assign({}, localRecord, data || {}));
         this.setData({ selectedRecord, detailLoading: false });
@@ -251,6 +276,16 @@ Page({
       .catch(() => {
         this.setData({ detailLoading: false });
         toast('详情加载失败，请稍后重试');
+      });
+  },
+
+  _loadRecordDetail(id, localRecord) {
+    return apiRequest('/records/' + id)
+      .catch(err => {
+        if (localRecord && localRecord.type === 'contract') {
+          return apiRequest('/contract/records/' + id);
+        }
+        throw err;
       });
   },
 

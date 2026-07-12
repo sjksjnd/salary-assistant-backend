@@ -148,6 +148,8 @@ page {
 .font-scale-small .menu-desc,
 .font-scale-small .grid-desc,
 .font-scale-small .secondary-desc,
+.font-scale-small .doc-desc,
+.font-scale-small .doc-note,
 .font-scale-small .brand-desc,
 .font-scale-small .boundary-strip,
 .font-scale-small .tag { font-size: 20rpx; }
@@ -193,6 +195,7 @@ page {
 .font-scale-small .menu-title,
 .font-scale-small .grid-title,
 .font-scale-small .secondary-title,
+.font-scale-small .doc-title,
 .font-scale-small .section-title,
 .font-scale-small .status-title,
 .font-scale-small .username,
@@ -243,6 +246,8 @@ page {
 .font-scale-large .menu-desc,
 .font-scale-large .grid-desc,
 .font-scale-large .secondary-desc,
+.font-scale-large .doc-desc,
+.font-scale-large .doc-note,
 .font-scale-large .brand-desc,
 .font-scale-large .boundary-strip,
 .font-scale-large .tag { font-size: 26rpx; }
@@ -288,6 +293,7 @@ page {
 .font-scale-large .menu-title,
 .font-scale-large .grid-title,
 .font-scale-large .secondary-title,
+.font-scale-large .doc-title,
 .font-scale-large .section-title,
 .font-scale-large .status-title,
 .font-scale-large .username,
