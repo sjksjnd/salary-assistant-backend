@@ -1,8 +1,14 @@
-// 首页：今日工作台
+// 首页：功能菜单
 const { apiRequest, isLoggedIn, toast } = require('../../utils/api');
 const { applyPageFontScale } = require('../../utils/fontScale');
 
 const app = getApp();
+
+const LOGIN_REQUIRED_PATHS = [
+  '/pages/workhours/workhours',
+  '/pages/salary/salary',
+  '/pages/records/records'
+];
 
 function currentMonth() {
   const d = new Date();
@@ -30,48 +36,72 @@ Page({
       todayLogged: false,
       monthDays: 0,
       monthHours: '0',
-      hint: '登录后可查看本月工时摘要'
+      status: '登录后查看本月记录',
+      actionText: '去记录'
     },
-    primaryAction: {
-      key: 'workhours',
-      title: '先记一笔工时',
-      subtitle: '每天记清楚，月底核对工资更踏实',
-      path: '/pages/workhours/workhours',
-      isTab: true
-    },
-    tools: [
+    menuGroups: [
       {
-        key: 'contract',
-        title: '合同条款自查',
-        subtitle: '核对试用期、工资、工时等常见条款',
-        tag: '合同',
-        path: '/pages/contract/contract',
-        isTab: false
+        title: '日常记录',
+        items: [
+          {
+            key: 'workhours',
+            icon: '时',
+            title: '记工时',
+            desc: '记录每天工时、班次和时薪',
+            path: '/pages/workhours/workhours',
+            isTab: true
+          },
+          {
+            key: 'salary',
+            icon: '账',
+            title: '月度账单',
+            desc: '查看本月工资、扣款和花销',
+            path: '/pages/salary/salary',
+            isTab: true
+          }
+        ]
       },
       {
-        key: 'compensation',
-        title: '金额参考测算',
-        subtitle: '根据已填写信息生成参考金额',
-        tag: '测算',
-        path: '/pages/compensation/compensation',
-        isTab: false
+        title: '核对工具',
+        items: [
+          {
+            key: 'contract',
+            icon: '合',
+            title: '合同体检',
+            desc: '核对试用期、工资、工时等常见条款',
+            path: '/pages/contract/contract',
+            isTab: false
+          },
+          {
+            key: 'compensation',
+            icon: '算',
+            title: '金额参考测算',
+            desc: '根据已填写信息生成参考金额',
+            path: '/pages/compensation/compensation',
+            isTab: false
+          }
+        ]
       },
       {
-        key: 'materials',
-        title: '材料整理',
-        subtitle: '整理工资、工时、合同相关材料',
-        tag: '材料',
-        path: '/pages/materials/materials',
-        isTab: false
-      }
-    ],
-    quickLinks: [
-      {
-        key: 'records',
-        title: '我的记录',
-        subtitle: '历史自查和测算',
-        path: '/pages/records/records',
-        isTab: false
+        title: '记录与材料',
+        items: [
+          {
+            key: 'records',
+            icon: '记',
+            title: '检测记录',
+            desc: '查看历史体检和测算结果',
+            path: '/pages/records/records',
+            isTab: false
+          },
+          {
+            key: 'materials',
+            icon: '材',
+            title: '材料整理',
+            desc: '整理工资、工时、合同相关材料',
+            path: '/pages/materials/materials',
+            isTab: false
+          }
+        ]
       }
     ]
   },
@@ -99,7 +129,8 @@ Page({
           todayLogged: false,
           monthDays: 0,
           monthHours: '0',
-          hint: '登录后可查看本月工时摘要'
+          status: '登录后查看本月记录',
+          actionText: '去登录'
         }
       });
       return;
@@ -119,7 +150,8 @@ Page({
             todayLogged,
             monthDays: records.length,
             monthHours: formatHours(totalHours),
-            hint: todayLogged ? '今天已记录，月底核对会更清楚' : '今天还没记工时，先补一笔'
+            status: todayLogged ? '今日已记录' : '今日还未记录工时',
+            actionText: todayLogged ? '继续查看' : '去记录'
           }
         });
       })
@@ -131,7 +163,8 @@ Page({
             todayLogged: false,
             monthDays: 0,
             monthHours: '0',
-            hint: '工时摘要暂时加载失败，不影响继续记录'
+            status: '本月摘要暂时未加载',
+            actionText: '去记录'
           }
         });
       });
@@ -140,6 +173,12 @@ Page({
   onTapEntry(e) {
     const { path, tab } = e.currentTarget.dataset;
     if (!path) return;
+    if (LOGIN_REQUIRED_PATHS.indexOf(path) >= 0 && !isLoggedIn()) {
+      wx.navigateTo({
+        url: '/pages/login/login?redirect=' + encodeURIComponent(path)
+      });
+      return;
+    }
     if (tab) {
       wx.switchTab({
         url: path,
