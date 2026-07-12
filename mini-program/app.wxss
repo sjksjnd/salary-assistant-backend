@@ -146,6 +146,8 @@ page {
 .font-scale-small .legend-item,
 .font-scale-small .status-meta,
 .font-scale-small .menu-desc,
+.font-scale-small .grid-desc,
+.font-scale-small .secondary-desc,
 .font-scale-small .brand-desc,
 .font-scale-small .boundary-strip,
 .font-scale-small .tag { font-size: 20rpx; }
@@ -189,6 +191,9 @@ page {
 .font-scale-small .bill-amount,
 .font-scale-small .menu-label,
 .font-scale-small .menu-title,
+.font-scale-small .grid-title,
+.font-scale-small .secondary-title,
+.font-scale-small .section-title,
 .font-scale-small .status-title,
 .font-scale-small .username,
 .font-scale-small .setting-label { font-size: 26rpx; }
@@ -236,6 +241,8 @@ page {
 .font-scale-large .legend-item,
 .font-scale-large .status-meta,
 .font-scale-large .menu-desc,
+.font-scale-large .grid-desc,
+.font-scale-large .secondary-desc,
 .font-scale-large .brand-desc,
 .font-scale-large .boundary-strip,
 .font-scale-large .tag { font-size: 26rpx; }
@@ -279,6 +286,9 @@ page {
 .font-scale-large .bill-amount,
 .font-scale-large .menu-label,
 .font-scale-large .menu-title,
+.font-scale-large .grid-title,
+.font-scale-large .secondary-title,
+.font-scale-large .section-title,
 .font-scale-large .status-title,
 .font-scale-large .username,
 .font-scale-large .setting-label { font-size: 34rpx; }

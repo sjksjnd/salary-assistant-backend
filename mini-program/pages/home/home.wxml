@@ -33,24 +33,44 @@
       <text class="status-arrow">›</text>
     </view>
 
-    <view class="menu-section" wx:for="{{menuGroups}}" wx:key="title">
-      <text class="menu-section-title">{{item.title}}</text>
-      <view class="menu-list">
+    <view class="grid-section">
+      <view class="section-head">
+        <text class="section-title">常用功能</text>
+      </view>
+      <view class="card-grid">
         <view
-          class="menu-row"
-          wx:for="{{item.items}}"
-          wx:for-item="menu"
+          class="grid-card {{item.tone}}"
+          wx:for="{{primaryCards}}"
           wx:key="key"
-          data-path="{{menu.path}}"
-          data-tab="{{menu.isTab}}"
+          data-path="{{item.path}}"
+          data-tab="{{item.isTab}}"
+          bindtap="onTapEntry"
+          hover-class="card-hover"
+          hover-stay-time="100"
+        >
+          <view class="grid-icon">{{item.icon}}</view>
+          <text class="grid-title">{{item.title}}</text>
+          <text class="grid-desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="secondary-section">
+      <text class="section-title">更多工具</text>
+      <view class="secondary-list">
+        <view
+          class="secondary-row"
+          wx:for="{{secondaryTools}}"
+          wx:key="key"
+          data-path="{{item.path}}"
+          data-tab="{{item.isTab}}"
           bindtap="onTapEntry"
           hover-class="menu-hover"
           hover-stay-time="100"
         >
-          <view class="menu-icon">{{menu.icon}}</view>
-          <view class="menu-copy">
-            <text class="menu-title">{{menu.title}}</text>
-            <text class="menu-desc">{{menu.desc}}</text>
+          <view class="secondary-copy">
+            <text class="secondary-title">{{item.title}}</text>
+            <text class="secondary-desc">{{item.desc}}</text>
           </view>
           <text class="menu-arrow">›</text>
         </view>

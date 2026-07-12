@@ -39,69 +39,58 @@ Page({
       status: '登录后查看本月记录',
       actionText: '去记录'
     },
-    menuGroups: [
+    primaryCards: [
       {
-        title: '日常记录',
-        items: [
-          {
-            key: 'workhours',
-            icon: '时',
-            title: '记工时',
-            desc: '记录每天工时、班次和时薪',
-            path: '/pages/workhours/workhours',
-            isTab: true
-          },
-          {
-            key: 'salary',
-            icon: '账',
-            title: '月度账单',
-            desc: '查看本月工资、扣款和花销',
-            path: '/pages/salary/salary',
-            isTab: true
-          }
-        ]
+        key: 'workhours',
+        icon: '时',
+        title: '记工时',
+        desc: '每天记录工时',
+        path: '/pages/workhours/workhours',
+        isTab: true,
+        tone: 'blue'
       },
       {
-        title: '核对工具',
-        items: [
-          {
-            key: 'contract',
-            icon: '合',
-            title: '合同体检',
-            desc: '核对试用期、工资、工时等常见条款',
-            path: '/pages/contract/contract',
-            isTab: false
-          },
-          {
-            key: 'compensation',
-            icon: '算',
-            title: '金额参考测算',
-            desc: '根据已填写信息生成参考金额',
-            path: '/pages/compensation/compensation',
-            isTab: false
-          }
-        ]
+        key: 'salary',
+        icon: '账',
+        title: '月度账单',
+        desc: '工资花销一页看',
+        path: '/pages/salary/salary',
+        isTab: true,
+        tone: 'green'
       },
       {
-        title: '记录与材料',
-        items: [
-          {
-            key: 'records',
-            icon: '记',
-            title: '检测记录',
-            desc: '查看历史体检和测算结果',
-            path: '/pages/records/records',
-            isTab: false
-          },
-          {
-            key: 'materials',
-            icon: '材',
-            title: '材料整理',
-            desc: '整理工资、工时、合同相关材料',
-            path: '/pages/materials/materials',
-            isTab: false
-          }
-        ]
+        key: 'contract',
+        icon: '合',
+        title: '合同体检',
+        desc: '核对常见条款',
+        path: '/pages/contract/contract',
+        isTab: false,
+        tone: 'amber'
+      },
+      {
+        key: 'records',
+        icon: '记',
+        title: '检测记录',
+        desc: '查看历史结果',
+        path: '/pages/records/records',
+        isTab: false,
+        tone: 'slate'
+      }
+    ],
+    secondaryTools: [
+      {
+        key: 'compensation',
+        title: '金额参考测算',
+        desc: '根据已填写信息生成参考金额',
+        path: '/pages/compensation/compensation',
+        isTab: false
+      },
+      {
+        key: 'materials',
+        title: '材料整理',
+        desc: '整理工资、工时、合同相关材料',
+        path: '/pages/materials/materials',
+        isTab: false
       }
     ]
   },
